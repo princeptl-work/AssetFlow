@@ -195,10 +195,12 @@ const Bookings = () => {
         return dateStr >= bStart && dateStr <= bEnd;
       });
 
+      const isToday = new Date().toISOString().split('T')[0] === dateStr;
+
       return (
         <div 
           key={idx} 
-          className={`calendar-cell ${!cell.currentMonth ? 'different-month' : ''}`}
+          className={`calendar-cell ${!cell.currentMonth ? 'different-month' : ''} ${isToday ? 'today' : ''}`}
         >
           <span className="calendar-cell-num">{cell.dayNum}</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '100%', overflowY: 'auto' }}>
