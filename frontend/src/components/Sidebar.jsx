@@ -1,15 +1,15 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  LayoutDashboard, 
-  Package, 
-  CalendarRange, 
-  Wrench, 
-  ArrowLeftRight, 
-  ClipboardCheck, 
-  Building2, 
-  History, 
+import {
+  LayoutDashboard,
+  Package,
+  CalendarRange,
+  Wrench,
+  ArrowLeftRight,
+  ClipboardCheck,
+  Building2,
+  History,
   LogOut,
   ChevronLeft,
   ChevronRight
@@ -56,8 +56,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
             </div>
           )}
         </Link>
-        <button 
-          className="collapse-btn" 
+        <button
+          className="collapse-btn"
           onClick={() => setIsCollapsed(!isCollapsed)}
           style={{ padding: '4px', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
         >
@@ -73,8 +73,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
 
           return (
             <li key={item.name} className="menu-item">
-              <Link 
-                to={item.path} 
+              <Link
+                to={item.path}
                 className={`menu-link ${isActive ? 'active' : ''}`}
                 onClick={() => setIsMobileOpen(false)}
               >

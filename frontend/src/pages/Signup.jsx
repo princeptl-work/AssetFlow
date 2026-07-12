@@ -150,12 +150,12 @@ const Signup = () => {
             </button>
           </form>
 
-          <div 
-            style={{ 
-              marginTop: '20px', 
-              padding: '12px', 
-              borderRadius: '8px', 
-              backgroundColor: '#FEF9E7', 
+          <div
+            style={{
+              marginTop: '20px',
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: '#FEF9E7',
               border: '1px solid #FDE68A',
               fontSize: '11px',
               color: '#92400E',
