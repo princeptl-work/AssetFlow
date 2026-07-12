@@ -336,61 +336,84 @@ async function mirrorToPostgres(table, data) {
   }
 }
 
-// Pull collections from PostgreSQL to JSON files, or seed PostgreSQL if empty
-async function syncFromPostgres() {
-  for (const col of COLLECTIONS) {
+let activeSyncPromise = null;
+let lastSyncTime = 0;
+const SYNC_THROTTLE_MS = 1000; // 1 second throttle
+
+// Pull collections from PostgreSQL to JSON files in parallel, or seed PostgreSQL if empty
+async function syncFromPostgres(force = false) {
+  if (!pgConnected || !pgPool) return;
+
+  const now = Date.now();
+  if (!force && (now - lastSyncTime < SYNC_THROTTLE_MS)) {
+    return activeSyncPromise; // Return existing sync promise if within throttle period
+  }
+
+  if (activeSyncPromise) {
+    return activeSyncPromise;
+  }
+
+  activeSyncPromise = (async () => {
     try {
-      const res = await pgPool.query(`SELECT * FROM "${col}"`);
-      const data = res.rows.map(row => {
-        const cleanItem = {};
-        const cols = TABLE_COLUMNS[col];
-        for (const c of cols) {
-          let val = row[c] !== undefined ? row[c] : row[c.toLowerCase()];
-          // Parse types back to JS if needed
-          if (c === 'history' || c === 'results' || c === 'previousValue' || c === 'newValue' || c === 'auditors' || c === 'details' || c === 'discrepancyReport' || c === 'images' || c === 'documents' || c === 'timeline') {
-            if (val) {
-              if (typeof val === 'string') {
-                try { cleanItem[c] = JSON.parse(val); } catch(e) { cleanItem[c] = val; }
+      await Promise.all(COLLECTIONS.map(async (col) => {
+        try {
+          const res = await pgPool.query(`SELECT * FROM "${col}"`);
+          const data = res.rows.map(row => {
+            const cleanItem = {};
+            const cols = TABLE_COLUMNS[col];
+            for (const c of cols) {
+              let val = row[c] !== undefined ? row[c] : row[c.toLowerCase()];
+              // Parse types back to JS if needed
+              if (c === 'history' || c === 'results' || c === 'previousValue' || c === 'newValue' || c === 'auditors' || c === 'details' || c === 'discrepancyReport' || c === 'images' || c === 'documents' || c === 'timeline') {
+                if (val) {
+                  if (typeof val === 'string') {
+                    try { cleanItem[c] = JSON.parse(val); } catch(e) { cleanItem[c] = val; }
+                  } else {
+                    cleanItem[c] = val;
+                  }
+                } else {
+                  if (c === 'history' || c === 'auditors' || c === 'discrepancyReport' || c === 'images' || c === 'documents' || c === 'timeline') {
+                    cleanItem[c] = [];
+                  } else if (c === 'details') {
+                    cleanItem[c] = {};
+                  } else {
+                    cleanItem[c] = null;
+                  }
+                }
+              } else if (c === 'warrantyPeriod' || c === 'expectedLife') {
+                cleanItem[c] = val !== null && val !== undefined ? parseInt(val, 10) : null;
+              } else if (c === 'acquisitionCost' || c === 'cost') {
+                cleanItem[c] = val !== null && val !== undefined ? parseFloat(val) : null;
+              } else if (c === 'isRead') {
+                cleanItem[c] = val !== null && val !== undefined ? !!val : null;
               } else {
-                cleanItem[c] = val;
-              }
-            } else {
-              if (c === 'history' || c === 'auditors' || c === 'discrepancyReport' || c === 'images' || c === 'documents' || c === 'timeline') {
-                cleanItem[c] = [];
-              } else if (c === 'details') {
-                cleanItem[c] = {};
-              } else {
-                cleanItem[c] = null;
+                cleanItem[c] = val !== null && val !== undefined ? String(val) : '';
               }
             }
-          } else if (c === 'warrantyPeriod' || c === 'expectedLife') {
-            cleanItem[c] = val !== null && val !== undefined ? parseInt(val, 10) : null;
-          } else if (c === 'acquisitionCost' || c === 'cost') {
-            cleanItem[c] = val !== null && val !== undefined ? parseFloat(val) : null;
-          } else if (c === 'isRead') {
-            cleanItem[c] = val !== null && val !== undefined ? !!val : null;
-          } else {
-            cleanItem[c] = val !== null && val !== undefined ? String(val) : '';
-          }
-        }
-        return cleanItem;
-      });
+            return cleanItem;
+          });
 
-      if (data.length > 0) {
-        fs.writeFileSync(path.join(DATA_DIR, `${col}.json`), JSON.stringify(data, null, 2));
-        console.log(`[PG Sync] Loaded ${data.length} records for "${col}" from PostgreSQL.`);
-      } else {
-        // If PostgreSQL is empty, seed it with the current local database state
-        const localData = JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${col}.json`), 'utf8'));
-        if (localData.length > 0) {
-          console.log(`[PG Sync] Seeding PostgreSQL table "${col}" with ${localData.length} local records...`);
-          await mirrorToPostgres(col, localData);
+          if (data.length > 0) {
+            fs.writeFileSync(path.join(DATA_DIR, `${col}.json`), JSON.stringify(data, null, 2));
+          } else {
+            // If PostgreSQL is empty, seed it with the current local database state
+            const localData = JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${col}.json`), 'utf8'));
+            if (localData.length > 0) {
+              console.log(`[PG Sync] Seeding PostgreSQL table "${col}" with ${localData.length} local records...`);
+              await mirrorToPostgres(col, localData);
+            }
+          }
+        } catch (err) {
+          console.error(`[PG Sync Error] Failed to sync collection "${col}":`, err);
         }
-      }
-    } catch (err) {
-      console.error(`[PG Sync Error] Failed to sync collection "${col}":`, err);
+      }));
+      lastSyncTime = Date.now();
+    } finally {
+      activeSyncPromise = null;
     }
-  }
+  })();
+
+  return activeSyncPromise;
 }
 
 // Check for overdue allocations and generate notifications
@@ -462,6 +485,9 @@ async function checkOverdueAllocations() {
 
 // Database client wrapper
 const db = {
+  // Sync wrapper
+  syncFromPostgres,
+
   // Read all from a collection
   read(collection) {
     const filePath = path.join(DATA_DIR, `${collection}.json`);

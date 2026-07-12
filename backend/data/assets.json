@@ -294,5 +294,79 @@
     "documents": [],
     "createdAt": "2026-07-12T04:28:51.649Z",
     "updatedAt": ""
+  },
+  {
+    "id": "AF-0009",
+    "name": "abcd",
+    "categoryId": "CAT-1783830531625-320",
+    "serialNumber": "",
+    "modelNumber": "",
+    "manufacturer": "",
+    "acquisitionDate": "2026-07-12",
+    "acquisitionCost": 0,
+    "location": "",
+    "departmentId": "",
+    "condition": "Excellent",
+    "status": "Available",
+    "warrantyExpiry": "",
+    "bookable": "No",
+    "remarks": "",
+    "allocatedToUserId": "",
+    "allocatedDate": "",
+    "expectedReturnDate": "",
+    "assetTag": "AF-0009",
+    "qrCode": "assetflow://asset/AF-0009?sn=",
+    "barcode": "AF*0009*0",
+    "history": [
+      {
+        "id": "HIST-1783840364700",
+        "date": "2026-07-12T07:12:44.700Z",
+        "user": "System Administrator",
+        "notes": "Initial registration in AssetFlow system.",
+        "userId": "USR0001",
+        "eventType": "Created"
+      }
+    ],
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T07:12:44.700Z",
+    "updatedAt": ""
+  },
+  {
+    "id": "AF-0010",
+    "name": "Charger",
+    "categoryId": "CAT-1783830531625-320",
+    "serialNumber": "AF-0010",
+    "modelNumber": "af230gmsk",
+    "manufacturer": "",
+    "acquisitionDate": "2026-07-12",
+    "acquisitionCost": 1000,
+    "location": "",
+    "departmentId": "",
+    "condition": "Excellent",
+    "status": "Available",
+    "warrantyExpiry": "",
+    "bookable": "No",
+    "remarks": "",
+    "allocatedToUserId": "",
+    "allocatedDate": "",
+    "expectedReturnDate": "",
+    "assetTag": "AF-0010",
+    "qrCode": "assetflow://asset/AF-0010?sn=AF-0010",
+    "barcode": "AF*0010*AF-0010",
+    "history": [
+      {
+        "id": "HIST-1783841109528",
+        "date": "2026-07-12T07:25:09.528Z",
+        "user": "System Administrator",
+        "notes": "Initial registration in AssetFlow system.",
+        "userId": "USR0001",
+        "eventType": "Created"
+      }
+    ],
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T07:25:09.672Z",
+    "updatedAt": ""
   }
 ]

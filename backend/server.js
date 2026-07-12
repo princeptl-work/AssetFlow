@@ -18,6 +18,19 @@ app.use((req, res, next) => {
   next();
 });
 
+// Database live-sync middleware: Sync Postgres into local files before serving any API requests
+const dbObj = require('./db');
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api') && req.path !== '/api/health') {
+    try {
+      await dbObj.syncFromPostgres();
+    } catch (err) {
+      console.error('[Sync Middleware Error]:', err);
+    }
+  }
+  next();
+});
+
 // Import Modular Routers
 const authRouter = require('./routes/auth');
 const orgRouter = require('./routes/organization');

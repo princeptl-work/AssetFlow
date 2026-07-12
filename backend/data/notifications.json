@@ -14,7 +14,7 @@
     "message": "Overdue Return Alert: Asset \"Herman Miller Aeron Chair\" (AF-0003) held by Marcus Wright was expected back on 2026-07-01.",
     "type": "Overdue Return Alert",
     "link": "/assets",
-    "isRead": false,
+    "isRead": true,
     "timestamp": "2026-07-12T06:02:57.105Z"
   },
   {
