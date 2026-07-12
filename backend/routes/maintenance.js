@@ -82,6 +82,10 @@ router.get('/:id', auth, (req, res) => {
 router.post('/', auth, (req, res) => {
   const { assetId, issue, priority, description, images, documents } = req.body;
 
+  if (req.user.role === 'Admin') {
+    return res.status(403).json({ message: 'Administrators cannot raise maintenance tickets.' });
+  }
+
   if (!assetId || !issue || !priority) {
     return res.status(400).json({ message: 'Asset, issue summary, and priority are required.' });
   }

@@ -144,6 +144,7 @@ const Assets = () => {
       case 'Available': return 'badge-success';
       case 'Allocated': return 'badge-gray';
       case 'Reserved': return 'badge-warning';
+      case 'Return Pending': return 'badge-warning';
       case 'Under Maintenance': return 'badge-danger';
       case 'Lost': return 'badge-danger';
       case 'Retired': return 'badge-gray';
@@ -312,6 +313,27 @@ const Assets = () => {
     }
   };
 
+  const handleRequestReturn = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`/api/assets/${selectedAssetId}/request-return`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ notes: returnForm.notes })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Return request submitted successfully.', 'success');
+        loadAssetDetails(selectedAssetId);
+        fetchData();
+      } else {
+        showToast(data.message, 'error');
+      }
+    } catch (err) {
+      showToast('Failed to submit return request.', 'error');
+    }
+  };
+
   const handleTransferRequest = async (e) => {
     e.preventDefault();
     if (!transferForm.targetUserId && !transferForm.targetDepartmentId) {
@@ -427,7 +449,7 @@ const Assets = () => {
     {
       key: 'status',
       label: 'Statuses',
-      options: ['Available', 'Allocated', 'Reserved', 'Under Maintenance', 'Lost', 'Retired', 'Disposed'].map(s => ({ value: s, label: s }))
+      options: ['Available', 'Allocated', 'Return Pending', 'Reserved', 'Under Maintenance', 'Lost', 'Retired', 'Disposed'].map(s => ({ value: s, label: s }))
     },
     {
       key: 'condition',
@@ -684,10 +706,35 @@ const Assets = () => {
                   </div>
                 )}
 
-                {/* ACTION 2: RETURN (Allocated -> Available) */}
-                {(assetDetails.status === 'Allocated' || assetDetails.status === 'Lost') && (user?.role === 'Admin' || user?.role === 'Asset Manager') && (
+                {/* ACTION 2: INITIATE RETURN (Employee / Holder request) */}
+                {assetDetails.status === 'Allocated' && (assetDetails.allocatedToUserId === user?.id || user?.role === 'Employee') && (
+                  <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
+                    <h4>Initiate Asset Return</h4>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                      Request to check this asset back into inventory.
+                    </p>
+                    <form onSubmit={handleRequestReturn}>
+                      <div className="form-group" style={{ marginBottom: '8px' }}>
+                        <textarea 
+                          className="form-control" rows="2"
+                          placeholder="Provide return reason or remarks (optional)..."
+                          value={returnForm.notes} onChange={e => setReturnForm(prev => ({ ...prev, notes: e.target.value }))}
+                        />
+                      </div>
+                      <button className="btn btn-secondary btn-sm" style={{ width: '100%' }}>Initiate Return</button>
+                    </form>
+                  </div>
+                )}
+
+                {/* ACTION 2.5: APPROVE RETURN / CHECK-IN (Asset Manager only) */}
+                {(assetDetails.status === 'Allocated' || assetDetails.status === 'Return Pending' || assetDetails.status === 'Lost') && user?.role === 'Asset Manager' && (
                   <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
                     <h4>Check-in Return</h4>
+                    {assetDetails.status === 'Return Pending' && (
+                      <div style={{ backgroundColor: '#FEF3C7', color: '#D97706', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', marginBottom: '12px', fontWeight: '500' }}>
+                        Notice: Employee has requested to return this asset.
+                      </div>
+                    )}
                     <form onSubmit={handleReturn} style={{ marginTop: '10px' }}>
                       <div className="form-group">
                         <label className="form-label">Return Condition *</label>
@@ -714,7 +761,7 @@ const Assets = () => {
                 )}
 
                 {/* ACTION 3: REQUEST TRANSFER */}
-                {assetDetails.status === 'Allocated' && (
+                {assetDetails.status === 'Allocated' && user?.role !== 'Admin' && (
                   <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
                     <h4>Request Reallocation Transfer</h4>
                     <form onSubmit={handleTransferRequest} style={{ marginTop: '10px' }}>

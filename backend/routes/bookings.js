@@ -88,6 +88,10 @@ router.get('/', auth, (req, res) => {
 router.post('/', auth, (req, res) => {
   const { resourceType, assetId, purpose, startTime, endTime } = req.body;
 
+  if (req.user.role === 'Admin') {
+    return res.status(403).json({ message: 'Administrators cannot book resources.' });
+  }
+
   if (!resourceType || !startTime || !endTime || !purpose) {
     return res.status(400).json({ message: 'Resource type, purpose, start time, and end time are required.' });
   }
@@ -158,12 +162,30 @@ router.post('/', auth, (req, res) => {
     });
   }
 
+  // Privilege check for booking on behalf of others
+  let targetUserId = req.user.id;
+  let targetDeptId = req.user.departmentId || '';
+
+  if (req.body.userId && ['Admin', 'Asset Manager', 'Department Head'].includes(req.user.role)) {
+    const targetUser = db.findById('users', req.body.userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'Target user for booking not found.' });
+    }
+
+    if (req.user.role === 'Department Head' && targetUser.departmentId !== req.user.departmentId) {
+      return res.status(403).json({ message: 'You can only book on behalf of employees in your department.' });
+    }
+
+    targetUserId = targetUser.id;
+    targetDeptId = targetUser.departmentId || '';
+  }
+
   // Schema: bookings
   const newBooking = db.create('bookings', {
     resourceType,
     assetId: assetId || '',
-    userId: req.user.id,
-    departmentId: req.user.departmentId || '',
+    userId: targetUserId,
+    departmentId: targetDeptId,
     purpose,
     startTime,
     endTime,

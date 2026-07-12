@@ -438,10 +438,70 @@ router.post('/:id/allocate', auth, checkRole(['Admin', 'Asset Manager']), (req, 
 });
 
 // ==========================================
-// RETURN ASSET — Admin, Asset Manager
+// REQUEST RETURN ASSET — Any authenticated user (subject to authorization)
+// Sets: status='Return Pending', history
+// ==========================================
+router.post('/:id/request-return', auth, (req, res) => {
+  const { id } = req.params;
+  const { notes } = req.body;
+
+  const asset = db.findById('assets', id);
+  if (!asset) {
+    return res.status(404).json({ message: 'Asset not found.' });
+  }
+
+  if (asset.status !== 'Allocated') {
+    return res.status(400).json({ message: 'Only currently allocated assets can be requested for return.' });
+  }
+
+  // Authorization: must be the holder, the department head of the holding dept, Admin, or Asset Manager
+  const isHolder = asset.allocatedToUserId === req.user.id;
+  const isDeptHeadOfAsset = req.user.role === 'Department Head' && asset.departmentId === req.user.departmentId;
+  const isPrivileged = req.user.role === 'Admin' || req.user.role === 'Asset Manager';
+
+  if (!isHolder && !isDeptHeadOfAsset && !isPrivileged) {
+    return res.status(403).json({ message: 'You can only request returns for assets allocated to you or your department.' });
+  }
+
+  const original = { ...asset };
+  const history = [...(asset.history || [])];
+  history.push({
+    id: `HIST-${Date.now()}`,
+    eventType: 'Return Requested',
+    date: new Date().toISOString(),
+    user: req.user.name,
+    userId: req.user.id,
+    notes: `Return initiated by ${req.user.name}. Notes: ${notes || 'No remarks provided.'}`
+  });
+
+  const { updated } = db.update('assets', id, {
+    status: 'Return Pending',
+    history
+  });
+
+  // Notify all Asset Managers
+  const managers = (db.read('users') || []).filter(u => u.role === 'Asset Manager');
+  managers.forEach(mgr => {
+    db.create('notifications', {
+      userId: mgr.id,
+      message: `Return request submitted for asset "${asset.name}" (${asset.assetTag}) by ${req.user.name}.`,
+      type: 'Asset Return Requested',
+      link: '/assets',
+      isRead: false,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  logActivity(req.user.id, req.user.name, 'Request Return', 'Asset', id, original, updated, req);
+
+  res.json({ message: 'Return request submitted successfully.', asset: updated });
+});
+
+// ==========================================
+// APPROVE RETURN (CHECK-IN) — Asset Manager only (Admin cannot approve)
 // Sets: status='Available', allocatedToUserId='', allocatedDate='', expectedReturnDate='', condition, history
 // ==========================================
-router.post('/:id/return', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
+router.post('/:id/return', auth, checkRole(['Asset Manager']), (req, res) => {
   const { id } = req.params;
   const { condition, notes } = req.body;
 
@@ -450,8 +510,8 @@ router.post('/:id/return', auth, checkRole(['Admin', 'Asset Manager']), (req, re
     return res.status(404).json({ message: 'Asset not found.' });
   }
 
-  if (asset.status !== 'Allocated' && asset.status !== 'Lost') {
-    return res.status(400).json({ message: `Cannot return asset with status "${asset.status}". Only Allocated or Lost assets can be returned.` });
+  if (asset.status !== 'Allocated' && asset.status !== 'Return Pending' && asset.status !== 'Lost') {
+    return res.status(400).json({ message: `Cannot return asset with status "${asset.status}". Only Allocated, Return Pending, or Lost assets can be returned.` });
   }
 
   const validConditions = ['Excellent', 'Good', 'Fair', 'Damaged'];

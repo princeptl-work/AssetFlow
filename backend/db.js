@@ -23,7 +23,8 @@ const COLLECTIONS = [
   'audits',
   'notifications',
   'logs',
-  'transfers'
+  'transfers',
+  'requests'
 ];
 
 const TABLE_COLUMNS = {
@@ -36,7 +37,8 @@ const TABLE_COLUMNS = {
   audits: ['id', 'name', 'departmentId', 'location', 'startDate', 'endDate', 'auditors', 'description', 'status', 'details', 'discrepancyReport', 'closedAt', 'createdAt', 'updatedAt'],
   notifications: ['id', 'userId', 'message', 'type', 'link', 'isRead', 'timestamp'],
   logs: ['id', 'userId', 'userName', 'action', 'entity', 'entityId', 'previousValue', 'newValue', 'ip', 'timestamp'],
-  transfers: ['id', 'assetId', 'requestedByUserId', 'targetUserId', 'targetDepartmentId', 'status', 'deptHeadApproverId', 'assetManagerApproverId', 'notes', 'requestDate', 'deptHeadApprovalDate', 'assetManagerApprovalDate', 'createdAt', 'updatedAt']
+  transfers: ['id', 'assetId', 'requestedByUserId', 'targetUserId', 'targetDepartmentId', 'status', 'deptHeadApproverId', 'assetManagerApproverId', 'notes', 'requestDate', 'deptHeadApprovalDate', 'assetManagerApprovalDate', 'createdAt', 'updatedAt'],
+  requests: ['id', 'userId', 'categoryId', 'reason', 'status', 'allocatedAssetId', 'remarks', 'createdAt', 'updatedAt']
 };
 
 const TABLE_SCHEMAS = {
@@ -205,6 +207,19 @@ const TABLE_SCHEMAS = {
       "createdAt" VARCHAR(255),
       "updatedAt" VARCHAR(255)
     )
+  `,
+  requests: `
+    CREATE TABLE IF NOT EXISTS "requests" (
+      "id" VARCHAR(255) PRIMARY KEY,
+      "userId" VARCHAR(255),
+      "categoryId" VARCHAR(255),
+      "reason" TEXT,
+      "status" VARCHAR(255),
+      "allocatedAssetId" VARCHAR(255),
+      "remarks" TEXT,
+      "createdAt" VARCHAR(255),
+      "updatedAt" VARCHAR(255)
+    )
   `
 };
 
@@ -240,23 +255,39 @@ if (process.env.DATABASE_URL) {
       console.log('==================================================');
       
       try {
-        // Automatic Migration: Check if 'photo' column exists in 'assets' table. 
-        // If not, drop all tables to apply the new schema.
-        const checkCol = await client.query(`
-          SELECT column_name 
-          FROM information_schema.columns 
-          WHERE table_name='assets' AND column_name='photo'
-        `);
-        if (checkCol.rows.length === 0) {
-          console.log('[PG] Schema correction needed. Dropping old tables...');
-          await client.query(`DROP TABLE IF EXISTS "users", "departments", "categories", "assets", "bookings", "maintenance", "audits", "notifications", "logs", "transfers" CASCADE`);
-        }
-
         // Create tables if they do not exist
         for (const col of COLLECTIONS) {
           await client.query(TABLE_SCHEMAS[col]);
         }
-        console.log('[PG] Verified database table structures.');
+
+        // Automatic Column Migration: Ensure all columns in TABLE_COLUMNS exist in PostgreSQL
+        for (const tableName of COLLECTIONS) {
+          for (const columnName of TABLE_COLUMNS[tableName]) {
+            const checkCol = await client.query(`
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_name=$1 AND column_name=$2
+            `, [tableName, columnName]);
+
+            if (checkCol.rows.length === 0) {
+              console.log(`[PG Migration] Adding missing column "${columnName}" to table "${tableName}"...`);
+              let colType = 'VARCHAR(255)';
+              if (['description', 'remarks', 'purpose', 'reason', 'discrepancyReport', 'issue', 'notes'].includes(columnName)) {
+                colType = 'TEXT';
+              } else if (['history', 'documents', 'timeline', 'details'].includes(columnName)) {
+                colType = 'JSONB';
+              } else if (columnName === 'acquisitionCost') {
+                colType = 'NUMERIC';
+              } else if (columnName === 'warrantyPeriod' || columnName === 'expectedLife') {
+                colType = 'INTEGER';
+              } else if (columnName === 'isRead') {
+                colType = 'BOOLEAN';
+              }
+              await client.query(`ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${colType}`);
+            }
+          }
+        }
+        console.log('[PG] Verified database table structures and applied any pending column migrations.');
         
         // Release client back to pool before calling sync
         client.release();

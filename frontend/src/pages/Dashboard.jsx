@@ -396,21 +396,25 @@ const Dashboard = () => {
         <h3 style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '12px' }}>Operational Quick Actions</h3>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           {(user?.role === 'Admin' || user?.role === 'Asset Manager') && (
-            <>
-              <button className="btn btn-primary" onClick={() => setActiveModal('register')}>
-                <FolderPlus size={16} /> Register Asset
-              </button>
-              <button className="btn btn-secondary" onClick={() => setActiveModal('allocate')}>
-                <UserCheck size={16} /> Allocate Asset
-              </button>
-            </>
+            <button className="btn btn-primary" onClick={() => setActiveModal('register')}>
+              <FolderPlus size={16} /> Register Asset
+            </button>
           )}
-          <button className="btn btn-secondary" onClick={() => setActiveModal('book')}>
-            <CalendarPlus size={16} /> Book Resource
-          </button>
-          <button className="btn btn-secondary" onClick={() => setActiveModal('maintenance')}>
-            <Wrench size={16} /> Request Maintenance
-          </button>
+          {user?.role === 'Asset Manager' && (
+            <button className="btn btn-secondary" onClick={() => setActiveModal('allocate')}>
+              <UserCheck size={16} /> Allocate Asset
+            </button>
+          )}
+          {user?.role !== 'Admin' && (
+            <button className="btn btn-secondary" onClick={() => setActiveModal('book')}>
+              <CalendarPlus size={16} /> Book Resource
+            </button>
+          )}
+          {user?.role !== 'Admin' && (
+            <button className="btn btn-secondary" onClick={() => setActiveModal('maintenance')}>
+              <Wrench size={16} /> Request Maintenance
+            </button>
+          )}
         </div>
       </div>
 

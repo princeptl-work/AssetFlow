@@ -12,6 +12,7 @@ const Bookings = () => {
   // Core Data States
   const [bookings, setBookings] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Calendar States
@@ -27,7 +28,7 @@ const Bookings = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
 
   // Form Fields
-  const [bookingForm, setBookingForm] = useState({ resourceType: 'Meeting Room', assetId: '', purpose: '', startTime: '', endTime: '' });
+  const [bookingForm, setBookingForm] = useState({ resourceType: 'Meeting Room', assetId: '', userId: '', purpose: '', startTime: '', endTime: '' });
   const [rescheduleForm, setRescheduleForm] = useState({ startTime: '', endTime: '', purpose: '' });
 
   const fetchData = async () => {
@@ -35,13 +36,15 @@ const Bookings = () => {
     setLoading(true);
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
-      const [bookRes, assetRes] = await Promise.all([
+      const [bookRes, assetRes, empRes] = await Promise.all([
         fetch('/api/bookings', { headers }),
-        fetch('/api/assets', { headers })
+        fetch('/api/assets', { headers }),
+        fetch('/api/auth/employees', { headers })
       ]);
 
       if (bookRes.ok) setBookings(await bookRes.json());
       if (assetRes.ok) setAssets(await assetRes.json());
+      if (empRes.ok) setEmployees(await empRes.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -57,6 +60,7 @@ const Bookings = () => {
     setBookingForm({
       resourceType: 'Meeting Room',
       assetId: '',
+      userId: '',
       purpose: '',
       startTime: new Date(Date.now() + 3600000).toISOString().slice(0, 16), // +1 hour from now
       endTime: new Date(Date.now() + 7200000).toISOString().slice(0, 16)  // +2 hours from now
@@ -301,9 +305,11 @@ const Bookings = () => {
           <button className="btn btn-secondary btn-sm" onClick={() => setCalendarMode(!calendarMode)}>
             {calendarMode ? 'List Grid View' : 'Calendar View'}
           </button>
-          <button className="btn btn-primary btn-sm" onClick={handleOpenBooking}>
-            <Plus size={14} /> Book Resource
-          </button>
+          {user?.role !== 'Admin' && (
+            <button className="btn btn-primary btn-sm" onClick={handleOpenBooking}>
+              <Plus size={14} /> Book Resource
+            </button>
+          )}
         </div>
       </div>
 
@@ -413,6 +419,32 @@ const Bookings = () => {
               </select>
             </div>
           </div>
+
+          {['Admin', 'Asset Manager', 'Department Head'].includes(user?.role) && (
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label className="form-label">Book For (On Behalf Of)</label>
+              <select
+                className="form-control"
+                value={bookingForm.userId}
+                onChange={e => setBookingForm(prev => ({ ...prev, userId: e.target.value }))}
+              >
+                <option value="">Self ({user.name})</option>
+                {employees
+                  .filter(emp => {
+                    if (user.role === 'Department Head') {
+                      return emp.departmentId === user.departmentId;
+                    }
+                    return true;
+                  })
+                  .map(emp => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.employeeId || 'N/A'}) - {emp.role}
+                    </option>
+                  ))
+                }
+              </select>
+            </div>
+          )}
 
           <div className="form-group">
             <label className="form-label">Purpose of Reservation *</label>

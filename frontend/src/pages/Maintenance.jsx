@@ -253,9 +253,11 @@ const Maintenance = () => {
           <h1 style={{ margin: 0, fontSize: '26px' }}>Maintenance Work Orders</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>Track facility work orders, hardware repairs, vehicle checkups, and calibrations</p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowCreateModal(true)}>
-          <Plus size={14} /> File Request
-        </button>
+        {user?.role !== 'Admin' && (
+          <button className="btn btn-primary btn-sm" onClick={() => setShowCreateModal(true)}>
+            <Plus size={14} /> File Request
+          </button>
+        )}
       </div>
 
       <Table

@@ -13,7 +13,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  TrendingUp
+  TrendingUp,
+  FileText
 } from 'lucide-react';
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
@@ -32,9 +33,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
       return 'Bookings';
     }
     if (baseName === 'Maintenance') {
-      if (user.role === 'Employee') return 'My Requests';
+      if (user.role === 'Employee') return 'My Maintenance';
       if (user.role === 'Department Head') return 'Dept Maintenance';
       return 'Maintenance';
+    }
+    if (baseName === 'Asset Requests') {
+      if (user.role === 'Employee') return 'Request Asset';
+      return 'Asset Requests';
     }
     if (baseName === 'Asset Transfers') {
       if (user.role === 'Employee') return 'My Transfers';
@@ -51,9 +56,10 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
     { name: 'Assets', path: '/assets', icon: Package, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Resource Bookings', path: '/bookings', icon: CalendarRange, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Maintenance', path: '/maintenance', icon: Wrench, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Asset Transfers', path: '/transfers', icon: ArrowLeftRight, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
+    { name: 'Asset Requests', path: '/requests', icon: FileText, roles: ['Asset Manager', 'Department Head', 'Employee'] },
+    { name: 'Resource Bookings', path: '/bookings', icon: CalendarRange, roles: ['Asset Manager', 'Department Head', 'Employee'] },
+    { name: 'Maintenance', path: '/maintenance', icon: Wrench, roles: ['Asset Manager', 'Department Head', 'Employee'] },
+    { name: 'Asset Transfers', path: '/transfers', icon: ArrowLeftRight, roles: ['Asset Manager', 'Department Head', 'Employee'] },
     { name: 'Audit Cycles', path: '/audits', icon: ClipboardCheck, roles: ['Admin', 'Asset Manager'] },
     { name: 'Reports', path: '/reports', icon: TrendingUp, roles: ['Admin', 'Asset Manager', 'Department Head'] },
     { name: 'Organization Setup', path: '/organization', icon: Building2, roles: ['Admin'] },

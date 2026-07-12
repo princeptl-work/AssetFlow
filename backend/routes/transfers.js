@@ -63,6 +63,10 @@ router.get('/', auth, (req, res) => {
 router.post('/', auth, (req, res) => {
   const { assetId, targetUserId, targetDepartmentId, notes } = req.body;
 
+  if (req.user.role === 'Admin') {
+    return res.status(403).json({ message: 'Administrators cannot initiate asset transfers.' });
+  }
+
   if (!assetId) {
     return res.status(400).json({ message: 'Asset ID is required.' });
   }

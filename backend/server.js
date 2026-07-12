@@ -42,6 +42,7 @@ const auditsRouter = require('./routes/audits');
 const notifyRouter = require('./routes/notifications');
 const logsRouter = require('./routes/logs');
 const analyticsRouter = require('./routes/analytics');
+const requestsRouter = require('./routes/requests');
 
 // Register API Routes
 app.use('/api/auth', authRouter);
@@ -54,6 +55,7 @@ app.use('/api/audits', auditsRouter);
 app.use('/api/notifications', notifyRouter);
 app.use('/api/logs', logsRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/requests', requestsRouter);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
