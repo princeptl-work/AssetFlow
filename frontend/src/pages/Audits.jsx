@@ -174,7 +174,7 @@ const Audits = () => {
     { key: 'name', label: 'Audit Cycle', render: (item) => <span onClick={() => loadAuditDetails(item.id)} style={{ color: 'var(--primary)', fontWeight: 'bold', cursor: 'pointer' }}>{item.name}</span> },
     { key: 'departmentName', label: 'Scope Department' },
     { key: 'location', label: 'Scope Location', render: (item) => item.location || 'All Locations' },
-    { key: 'auditorNames', label: 'Assigned Auditors', render: (item) => item.auditorNames.join(', ') },
+    { key: 'auditorNames', label: 'Assigned Auditors', render: (item) => (item.auditorNames && item.auditorNames.length > 0 ? item.auditorNames.join(', ') : <span style={{ color: 'var(--text-light)' }}>None Assigned</span>) },
     { key: 'startDate', label: 'Start Date' },
     { key: 'endDate', label: 'End Date' },
     { 

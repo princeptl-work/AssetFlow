@@ -15,7 +15,8 @@ import {
   CheckSquare,
   QrCode,
   QrCode as Barcode,
-  RotateCcw
+  RotateCcw,
+  UserCheck
 } from 'lucide-react';
 
 // A simple simulated barcode renderer using SVG

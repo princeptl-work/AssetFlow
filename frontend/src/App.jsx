@@ -88,7 +88,7 @@ const AppLayout = () => {
             <Route path="/maintenance" element={<ProtectedRoute element={<Maintenance />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
             <Route path="/transfers" element={<ProtectedRoute element={<Transfers />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
             
-            <Route path="/audits" element={<ProtectedRoute element={<Audits />} allowedRoles={['Admin', 'Asset Manager']} />} />
+            <Route path="/audits" element={<ProtectedRoute element={<Audits />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
             <Route path="/reports" element={<ProtectedRoute element={<Reports />} allowedRoles={['Admin', 'Asset Manager', 'Department Head']} />} />
             <Route path="/organization" element={<ProtectedRoute element={<OrgSetup />} allowedRoles={['Admin']} />} />
             <Route path="/logs" element={<ProtectedRoute element={<Logs />} allowedRoles={['Admin']} />} />

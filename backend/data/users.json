@@ -11,21 +11,8 @@
     "role": "Admin",
     "status": "Active",
     "joiningDate": "2026-01-01",
-    "createdAt": "2026-07-12T04:28:51.371Z"
-  },
-  {
-    "id": "USR0002",
-    "employeeId": "AF-EMP-002",
-    "name": "Sarah Connor",
-    "email": "manager@assetflow.com",
-    "password": "$2a$10$IMg2yhC2ANusHXAar1WCEe/T4ImXmcnMqVDal71NoiQNNOyFvCLK2",
-    "phone": "+1 (555) 019-5832",
-    "photo": "",
-    "departmentId": "DEP-1783830531268-685",
-    "role": "Asset Manager",
-    "status": "Active",
-    "joiningDate": "2026-02-15",
-    "createdAt": "2026-07-12T04:28:51.455Z"
+    "createdAt": "2026-07-12T04:28:51.371Z",
+    "updatedAt": ""
   },
   {
     "id": "USR0003",
@@ -39,7 +26,8 @@
     "role": "Department Head",
     "status": "Active",
     "joiningDate": "2026-03-01",
-    "createdAt": "2026-07-12T04:28:51.549Z"
+    "createdAt": "2026-07-12T04:28:51.549Z",
+    "updatedAt": ""
   },
   {
     "id": "USR0004",
@@ -53,6 +41,37 @@
     "role": "Employee",
     "status": "Active",
     "joiningDate": "2026-04-10",
-    "createdAt": "2026-07-12T04:28:51.625Z"
+    "createdAt": "2026-07-12T04:28:51.625Z",
+    "updatedAt": ""
+  },
+  {
+    "id": "USR0005",
+    "employeeId": "AF-EMP-005",
+    "name": "Vraj Prajapati",
+    "email": "vrajprajapati6004@gmail.com",
+    "password": "$2a$10$l3DU4InK5kjwUVdC60JVn.zHrnonY/2q5c.dJXULNmSC3XczeQNDW",
+    "phone": "9870098351",
+    "photo": "",
+    "departmentId": "",
+    "role": "Employee",
+    "status": "Active",
+    "joiningDate": "2026-07-12",
+    "createdAt": "2026-07-12T06:26:24.524Z",
+    "updatedAt": "2026-07-12T06:49:07.383Z"
+  },
+  {
+    "id": "USR0002",
+    "employeeId": "AF-EMP-002",
+    "name": "Sarah Connor",
+    "email": "manager@assetflow.com",
+    "password": "$2a$10$IMg2yhC2ANusHXAar1WCEe/T4ImXmcnMqVDal71NoiQNNOyFvCLK2",
+    "phone": "+1 (555) 019-5832",
+    "photo": "",
+    "departmentId": "DEP-1783830531268-685",
+    "role": "Department Head",
+    "status": "Active",
+    "joiningDate": "2026-02-15",
+    "createdAt": "2026-07-12T04:28:51.455Z",
+    "updatedAt": "2026-07-12T06:57:42.996Z"
   }
 ]

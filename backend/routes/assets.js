@@ -4,7 +4,7 @@ const db = require('../db');
 const { auth, checkRole } = require('../authMiddleware');
 const { logActivity } = require('../logger');
 
-// Generate Barcode / QR Code strings
+// Generate QR code and barcode strings from asset tag + serial
 function generateCodes(tag, serial) {
   return {
     qrCode: `assetflow://asset/${tag}?sn=${serial || ''}`,
@@ -12,15 +12,15 @@ function generateCodes(tag, serial) {
   };
 }
 
-// Lifecycle transition state validation rules
+// Lifecycle transition validation rules
 const VALID_TRANSITIONS = {
-  'Available': ['Allocated', 'Reserved', 'Under Maintenance', 'Lost', 'Retired'],
-  'Allocated': ['Available', 'Lost'],
-  'Reserved': ['Allocated', 'Available'],
+  'Available':       ['Allocated', 'Reserved', 'Under Maintenance', 'Lost', 'Retired'],
+  'Allocated':       ['Available', 'Lost'],
+  'Reserved':        ['Allocated', 'Available'],
   'Under Maintenance': ['Available'],
-  'Lost': ['Available', 'Retired'], // Available indicates 'Recovered'
-  'Retired': ['Disposed'],
-  'Disposed': [] // Terminal state
+  'Lost':            ['Available', 'Retired'],
+  'Retired':         ['Disposed'],
+  'Disposed':        []
 };
 
 function isValidTransition(fromState, toState) {
@@ -29,23 +29,26 @@ function isValidTransition(fromState, toState) {
   return allowed ? allowed.includes(toState) : false;
 }
 
-// Get all assets (with advanced filtering, search, and sorting)
+// ==========================================
+// GET ALL ASSETS (with role-scoping & filters)
+// ==========================================
+// Admin, Asset Manager: all assets
+// Department Head: their dept assets + bookable assets
+// Employee: their allocated assets + bookable assets
 router.get('/', auth, (req, res) => {
   let assets = db.read('assets');
 
-  // Role-based data scoping
   if (req.user.role === 'Employee') {
-    assets = assets.filter(a => a.allocatedToUserId === req.user.id);
+    assets = assets.filter(a => a.allocatedToUserId === req.user.id || a.bookable === 'Yes');
   } else if (req.user.role === 'Department Head') {
-    assets = assets.filter(a => a.departmentId === req.user.departmentId);
+    assets = assets.filter(a => a.departmentId === req.user.departmentId || a.bookable === 'Yes');
   }
 
-  // Search by Tag, Name, Serial Number, QR, Brand/Manufacturer
   const { search, categoryId, departmentId, status, condition, location, bookable } = req.query;
 
   if (search) {
     const s = search.toLowerCase();
-    assets = assets.filter(a => 
+    assets = assets.filter(a =>
       (a.assetTag && a.assetTag.toLowerCase().includes(s)) ||
       (a.name && a.name.toLowerCase().includes(s)) ||
       (a.serialNumber && a.serialNumber.toLowerCase().includes(s)) ||
@@ -54,7 +57,6 @@ router.get('/', auth, (req, res) => {
     );
   }
 
-  // Filters
   if (categoryId) assets = assets.filter(a => a.categoryId === categoryId);
   if (departmentId) assets = assets.filter(a => a.departmentId === departmentId);
   if (status) assets = assets.filter(a => a.status === status);
@@ -62,21 +64,19 @@ router.get('/', auth, (req, res) => {
   if (location) assets = assets.filter(a => a.location && a.location.toLowerCase().includes(location.toLowerCase()));
   if (bookable) assets = assets.filter(a => a.bookable === bookable);
 
-  // Attach joins for Category and Department name for grid display
+  // Enrich with related names
   const categories = db.read('categories');
   const departments = db.read('departments');
   const users = db.read('users');
 
-  const joinedAssets = assets.map(asset => {
+  const joined = assets.map(asset => {
     const cat = categories.find(c => c.id === asset.categoryId);
     const dept = departments.find(d => d.id === asset.departmentId);
     let allocatedToName = '';
-    
     if (asset.allocatedToUserId) {
       const u = users.find(user => user.id === asset.allocatedToUserId);
       if (u) allocatedToName = u.name;
     }
-
     return {
       ...asset,
       categoryName: cat ? cat.name : 'Unknown',
@@ -85,10 +85,12 @@ router.get('/', auth, (req, res) => {
     };
   });
 
-  res.json(joinedAssets);
+  res.json(joined);
 });
 
-// Get individual asset by ID/Tag
+// ==========================================
+// GET SINGLE ASSET
+// ==========================================
 router.get('/:id', auth, (req, res) => {
   const { id } = req.params;
   const asset = db.findById('assets', id) || db.findOne('assets', { assetTag: id });
@@ -96,15 +98,14 @@ router.get('/:id', auth, (req, res) => {
     return res.status(404).json({ message: 'Asset not found.' });
   }
 
-  // Role-based individual scope verification
-  if (req.user.role === 'Employee' && asset.allocatedToUserId !== req.user.id) {
-    return res.status(403).json({ message: 'Access denied. You can only view your own allocated assets.' });
+  // Role-based scope check
+  if (req.user.role === 'Employee' && asset.allocatedToUserId !== req.user.id && asset.bookable !== 'Yes') {
+    return res.status(403).json({ message: 'Access denied. You can only view your own allocated assets or bookable resources.' });
   }
-  if (req.user.role === 'Department Head' && asset.departmentId !== req.user.departmentId) {
-    return res.status(403).json({ message: 'Access denied. You can only view assets belonging to your department.' });
+  if (req.user.role === 'Department Head' && asset.departmentId !== req.user.departmentId && asset.bookable !== 'Yes') {
+    return res.status(403).json({ message: 'Access denied. You can only view assets in your department or bookable resources.' });
   }
 
-  // Add relations
   const categories = db.read('categories');
   const departments = db.read('departments');
   const users = db.read('users');
@@ -112,7 +113,6 @@ router.get('/:id', auth, (req, res) => {
   const cat = categories.find(c => c.id === asset.categoryId);
   const dept = departments.find(d => d.id === asset.departmentId);
   let allocatedToUser = null;
-
   if (asset.allocatedToUserId) {
     const u = users.find(user => user.id === asset.allocatedToUserId);
     if (u) {
@@ -129,7 +129,13 @@ router.get('/:id', auth, (req, res) => {
   });
 });
 
-// Register new asset
+// ==========================================
+// REGISTER NEW ASSET — Admin, Asset Manager
+// Schema: assets — name, categoryId, serialNumber, modelNumber, manufacturer, acquisitionDate,
+//   acquisitionCost, location, departmentId, condition, status, warrantyExpiry, bookable,
+//   remarks, allocatedToUserId, allocatedDate, expectedReturnDate, assetTag, qrCode, barcode,
+//   history, photo, documents, createdAt(auto), updatedAt(auto)
+// ==========================================
 router.post('/', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   const {
     name, categoryId, serialNumber, modelNumber, manufacturer,
@@ -141,61 +147,71 @@ router.post('/', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
     return res.status(400).json({ message: 'Name, Category, and Condition are required fields.' });
   }
 
-  // Validate serial number uniqueness if provided
-  if (serialNumber) {
-    const existingSerial = db.findOne('assets', { serialNumber });
+  // Validate condition enum
+  const validConditions = ['Excellent', 'Good', 'Fair', 'Damaged'];
+  if (!validConditions.includes(condition)) {
+    return res.status(400).json({ message: `Condition must be one of: ${validConditions.join(', ')}` });
+  }
+
+  // Serial number uniqueness
+  if (serialNumber && serialNumber.trim()) {
+    const existingSerial = db.findOne('assets', { serialNumber: serialNumber.trim() });
     if (existingSerial) {
-      return res.status(400).json({ message: `An asset with Serial Number ${serialNumber} already exists.` });
+      return res.status(400).json({ message: `An asset with Serial Number "${serialNumber}" already exists.` });
     }
   }
 
-  // Validate acquisition date is not in future
+  // Acquisition date not in future
   if (acquisitionDate && new Date(acquisitionDate) > new Date()) {
     return res.status(400).json({ message: 'Acquisition date cannot be in the future.' });
   }
 
-  // Verify category exists
+  // Validate category
   const cat = db.findById('categories', categoryId);
   if (!cat) {
     return res.status(400).json({ message: 'Category not found.' });
   }
 
-  // Verify department if provided
-  if (departmentId) {
+  // Validate department
+  if (departmentId && departmentId !== '') {
     const dept = db.findById('departments', departmentId);
     if (!dept) {
       return res.status(400).json({ message: 'Department not found.' });
     }
     if (dept.status === 'Inactive') {
-      return res.status(400).json({ message: 'Cannot assign assets to an inactive department.' });
+      return res.status(400).json({ message: 'Cannot assign asset to an inactive department.' });
     }
   }
 
-  // Auto-generate tag (AF-XXXX)
-  const tagCount = db.read('assets').length + 1;
-  const assetTag = `AF-${String(tagCount).padStart(4, '0')}`;
+  // Auto-generate asset tag: AF-XXXX (sequential, based on total count + 1)
+  const allAssets = db.read('assets');
+  const tagNum = allAssets.length + 1;
+  const assetTag = `AF-${String(tagNum).padStart(4, '0')}`;
   const codes = generateCodes(assetTag, serialNumber);
 
   const newAsset = db.create('assets', {
-    assetTag,
     name,
     categoryId,
-    serialNumber: serialNumber || '',
+    serialNumber: serialNumber ? serialNumber.trim() : '',
     modelNumber: modelNumber || '',
     manufacturer: manufacturer || '',
     acquisitionDate: acquisitionDate || new Date().toISOString().split('T')[0],
-    acquisitionCost: Number(acquisitionCost) || 0,
+    acquisitionCost: acquisitionCost !== undefined ? Number(acquisitionCost) : 0,
     location: location || '',
     departmentId: departmentId || '',
-    condition, // Excellent, Good, Fair, Damaged
-    status: 'Available', // Available initially
+    condition,
+    status: 'Available',
     warrantyExpiry: warrantyExpiry || '',
-    bookable: bookable || 'No',
+    bookable: bookable === 'Yes' ? 'Yes' : 'No',
     remarks: remarks || '',
+    allocatedToUserId: '',
+    allocatedDate: '',
+    expectedReturnDate: '',
+    assetTag,
     qrCode: codes.qrCode,
     barcode: codes.barcode,
     photo: photo || '',
-    documents: documents || [],
+    documents: Array.isArray(documents) ? documents : (documents ? [documents] : []),
     history: [
       {
         id: `HIST-${Date.now()}`,
@@ -213,7 +229,9 @@ router.post('/', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   res.status(201).json(newAsset);
 });
 
-// Update asset details
+// ==========================================
+// UPDATE ASSET DETAILS — Admin, Asset Manager
+// ==========================================
 router.put('/:id', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   const { id } = req.params;
   const asset = db.findById('assets', id);
@@ -228,8 +246,16 @@ router.put('/:id', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
     photo, documents
   } = req.body;
 
-  // Validate state transitions
-  if (status && status !== asset.status) {
+  // Validate condition enum if provided
+  if (condition !== undefined) {
+    const validConditions = ['Excellent', 'Good', 'Fair', 'Damaged'];
+    if (!validConditions.includes(condition)) {
+      return res.status(400).json({ message: `Condition must be one of: ${validConditions.join(', ')}` });
+    }
+  }
+
+  // Validate state transition
+  if (status !== undefined && status !== asset.status) {
     if (!isValidTransition(asset.status, status)) {
       return res.status(400).json({
         message: `Invalid state transition: Cannot change status from "${asset.status}" to "${status}".`
@@ -237,16 +263,16 @@ router.put('/:id', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
     }
   }
 
-  // Validate serial number uniqueness
-  if (serialNumber && serialNumber !== asset.serialNumber) {
+  // Serial uniqueness check
+  if (serialNumber !== undefined && serialNumber !== asset.serialNumber) {
     const existingSerial = db.findOne('assets', { serialNumber });
     if (existingSerial) {
-      return res.status(400).json({ message: `An asset with Serial Number ${serialNumber} already exists.` });
+      return res.status(400).json({ message: `An asset with Serial Number "${serialNumber}" already exists.` });
     }
   }
 
-  // Verify department
-  if (departmentId && departmentId !== asset.departmentId) {
+  // Validate department
+  if (departmentId !== undefined && departmentId !== '' && departmentId !== asset.departmentId) {
     const dept = db.findById('departments', departmentId);
     if (!dept) {
       return res.status(400).json({ message: 'Department not found.' });
@@ -257,50 +283,55 @@ router.put('/:id', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   }
 
   const original = { ...asset };
-  
-  // Keep history
+
+  // Append lifecycle event to history if status changes
   const history = [...(asset.history || [])];
-  if (status && status !== asset.status) {
+  if (status !== undefined && status !== asset.status) {
     history.push({
       id: `HIST-${Date.now()}`,
       eventType: status,
       date: new Date().toISOString(),
       user: req.user.name,
       userId: req.user.id,
-      notes: `Asset status transitioned from "${asset.status}" to "${status}".`
+      notes: `Status transitioned from "${asset.status}" to "${status}".`
     });
   }
 
-  // Update codes if serialNumber changes
-  const codes = serialNumber !== asset.serialNumber ? generateCodes(asset.assetTag, serialNumber) : {};
+  // Regenerate codes if serial number changes
+  const codes = (serialNumber !== undefined && serialNumber !== asset.serialNumber)
+    ? generateCodes(asset.assetTag, serialNumber)
+    : {};
 
-  const { updated } = db.update('assets', id, {
-    name: name !== undefined ? name : asset.name,
-    categoryId: categoryId !== undefined ? categoryId : asset.categoryId,
-    serialNumber: serialNumber !== undefined ? serialNumber : asset.serialNumber,
-    modelNumber: modelNumber !== undefined ? modelNumber : asset.modelNumber,
-    manufacturer: manufacturer !== undefined ? manufacturer : asset.manufacturer,
-    acquisitionDate: acquisitionDate !== undefined ? acquisitionDate : asset.acquisitionDate,
-    acquisitionCost: acquisitionCost !== undefined ? Number(acquisitionCost) : asset.acquisitionCost,
-    location: location !== undefined ? location : asset.location,
-    departmentId: departmentId !== undefined ? departmentId : asset.departmentId,
-    condition: condition !== undefined ? condition : asset.condition,
-    status: status !== undefined ? status : asset.status,
-    warrantyExpiry: warrantyExpiry !== undefined ? warrantyExpiry : asset.warrantyExpiry,
-    bookable: bookable !== undefined ? bookable : asset.bookable,
-    remarks: remarks !== undefined ? remarks : asset.remarks,
-    photo: photo !== undefined ? photo : asset.photo,
-    documents: documents !== undefined ? documents : asset.documents,
-    history,
-    ...codes
-  });
+  // Build update — only schema fields
+  const updateData = { history, ...codes };
+  if (name !== undefined) updateData.name = name;
+  if (categoryId !== undefined) updateData.categoryId = categoryId;
+  if (serialNumber !== undefined) updateData.serialNumber = serialNumber;
+  if (modelNumber !== undefined) updateData.modelNumber = modelNumber;
+  if (manufacturer !== undefined) updateData.manufacturer = manufacturer;
+  if (acquisitionDate !== undefined) updateData.acquisitionDate = acquisitionDate;
+  if (acquisitionCost !== undefined) updateData.acquisitionCost = Number(acquisitionCost);
+  if (location !== undefined) updateData.location = location;
+  if (departmentId !== undefined) updateData.departmentId = departmentId;
+  if (condition !== undefined) updateData.condition = condition;
+  if (status !== undefined) updateData.status = status;
+  if (warrantyExpiry !== undefined) updateData.warrantyExpiry = warrantyExpiry;
+  if (bookable !== undefined) updateData.bookable = bookable === 'Yes' ? 'Yes' : 'No';
+  if (remarks !== undefined) updateData.remarks = remarks;
+  if (photo !== undefined) updateData.photo = photo;
+  if (documents !== undefined) updateData.documents = Array.isArray(documents) ? documents : (documents ? [documents] : []);
+
+  const { updated } = db.update('assets', id, updateData);
 
   logActivity(req.user.id, req.user.name, 'Update', 'Asset', id, original, updated, req);
 
   res.json(updated);
 });
 
-// Allocate Asset
+// ==========================================
+// ALLOCATE ASSET — Admin, Asset Manager
+// Sets: status='Allocated', allocatedToUserId, allocatedDate, expectedReturnDate, departmentId, history
+// ==========================================
 router.post('/:id/allocate', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   const { id } = req.params;
   const { employeeId, departmentId, expectedReturnDate, notes } = req.body;
@@ -310,7 +341,7 @@ router.post('/:id/allocate', auth, checkRole(['Admin', 'Asset Manager']), (req, 
     return res.status(404).json({ message: 'Asset not found.' });
   }
 
-  // Validation: Already allocated
+  // Block double allocation — show who holds it
   if (asset.status === 'Allocated') {
     let allocatedName = 'Unknown User';
     let allocatedDeptName = 'Unassigned';
@@ -322,7 +353,6 @@ router.post('/:id/allocate', auth, checkRole(['Admin', 'Asset Manager']), (req, 
       const d = db.findById('departments', asset.departmentId);
       if (d) allocatedDeptName = d.name;
     }
-
     return res.status(400).json({
       message: 'Double allocation blocked: This asset is currently allocated.',
       allocationDetails: {
@@ -333,16 +363,20 @@ router.post('/:id/allocate', auth, checkRole(['Admin', 'Asset Manager']), (req, 
     });
   }
 
-  // Check state eligibility (must be Available or Reserved)
+  // Only Available or Reserved can be allocated
   if (asset.status !== 'Available' && asset.status !== 'Reserved') {
-    return res.status(400).json({ message: `Cannot allocate asset in status "${asset.status}".` });
+    return res.status(400).json({ message: `Cannot allocate asset with status "${asset.status}".` });
+  }
+
+  if (!employeeId && !departmentId) {
+    return res.status(400).json({ message: 'Must specify either an Employee or a Department for allocation.' });
   }
 
   let employee = null;
   if (employeeId) {
     employee = db.findById('users', employeeId);
     if (!employee) {
-      return res.status(400).json({ message: 'Target Employee does not exist.' });
+      return res.status(400).json({ message: 'Target employee does not exist.' });
     }
     if (employee.status !== 'Active') {
       return res.status(400).json({ message: 'Cannot allocate asset to an inactive employee.' });
@@ -353,23 +387,18 @@ router.post('/:id/allocate', auth, checkRole(['Admin', 'Asset Manager']), (req, 
   if (departmentId) {
     dept = db.findById('departments', departmentId);
     if (!dept) {
-      return res.status(400).json({ message: 'Target Department does not exist.' });
+      return res.status(400).json({ message: 'Target department does not exist.' });
     }
     if (dept.status === 'Inactive') {
       return res.status(400).json({ message: 'Cannot allocate asset to an inactive department.' });
     }
   }
 
-  if (!employee && !dept) {
-    return res.status(400).json({ message: 'Must specify either an Employee or a Department for allocation.' });
-  }
-
   const original = { ...asset };
-  const history = [...(asset.history || [])];
-
   const allocDate = new Date().toISOString().split('T')[0];
   const notesText = notes || 'Allocated via Asset Manager.';
 
+  const history = [...(asset.history || [])];
   history.push({
     id: `HIST-${Date.now()}`,
     eventType: 'Allocated',
@@ -379,10 +408,11 @@ router.post('/:id/allocate', auth, checkRole(['Admin', 'Asset Manager']), (req, 
     notes: `Allocated to ${employee ? employee.name : `Dept: ${dept.name}`}. Expected Return: ${expectedReturnDate || 'None'}. Notes: ${notesText}`
   });
 
+  // Schema fields: status, allocatedToUserId, allocatedDate, expectedReturnDate, departmentId, history
   const updateData = {
     status: 'Allocated',
     allocatedToUserId: employee ? employee.id : '',
-    departmentId: employee ? (employee.departmentId || departmentId || '') : (departmentId || ''),
+    departmentId: employee ? (employee.departmentId || departmentId || asset.departmentId || '') : (departmentId || asset.departmentId || ''),
     allocatedDate: allocDate,
     expectedReturnDate: expectedReturnDate || '',
     history
@@ -390,7 +420,7 @@ router.post('/:id/allocate', auth, checkRole(['Admin', 'Asset Manager']), (req, 
 
   const { updated } = db.update('assets', id, updateData);
 
-  // Send Notification to Employee
+  // Notify assigned employee
   if (employee) {
     db.create('notifications', {
       userId: employee.id,
@@ -407,7 +437,10 @@ router.post('/:id/allocate', auth, checkRole(['Admin', 'Asset Manager']), (req, 
   res.json(updated);
 });
 
-// Return Asset
+// ==========================================
+// RETURN ASSET — Admin, Asset Manager
+// Sets: status='Available', allocatedToUserId='', allocatedDate='', expectedReturnDate='', condition, history
+// ==========================================
 router.post('/:id/return', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   const { id } = req.params;
   const { condition, notes } = req.body;
@@ -418,23 +451,28 @@ router.post('/:id/return', auth, checkRole(['Admin', 'Asset Manager']), (req, re
   }
 
   if (asset.status !== 'Allocated' && asset.status !== 'Lost') {
-    return res.status(400).json({ message: `Cannot return asset in status "${asset.status}".` });
+    return res.status(400).json({ message: `Cannot return asset with status "${asset.status}". Only Allocated or Lost assets can be returned.` });
+  }
+
+  const validConditions = ['Excellent', 'Good', 'Fair', 'Damaged'];
+  if (condition && !validConditions.includes(condition)) {
+    return res.status(400).json({ message: `Condition must be one of: ${validConditions.join(', ')}` });
   }
 
   const original = { ...asset };
+  const returnNotes = notes || 'Returned to inventory.';
+
   const history = [...(asset.history || [])];
-  
-  const returnNotes = notes || 'Returned to warehouse.';
   history.push({
     id: `HIST-${Date.now()}`,
     eventType: 'Returned',
     date: new Date().toISOString(),
     user: req.user.name,
     userId: req.user.id,
-    notes: `Returned condition: ${condition || asset.condition}. Notes: ${returnNotes}`
+    notes: `Returned. Condition: ${condition || asset.condition}. Notes: ${returnNotes}`
   });
 
-  // Notify the employee who returned it
+  // Notify the returning employee
   if (asset.allocatedToUserId) {
     db.create('notifications', {
       userId: asset.allocatedToUserId,
@@ -446,6 +484,7 @@ router.post('/:id/return', auth, checkRole(['Admin', 'Asset Manager']), (req, re
     });
   }
 
+  // Schema fields cleared on return
   const updateData = {
     status: 'Available',
     allocatedToUserId: '',
@@ -462,7 +501,9 @@ router.post('/:id/return', auth, checkRole(['Admin', 'Asset Manager']), (req, re
   res.json(updated);
 });
 
-// Delete Asset (Admin only)
+// ==========================================
+// DELETE ASSET — Admin only
+// ==========================================
 router.delete('/:id', auth, checkRole(['Admin']), (req, res) => {
   const { id } = req.params;
   const asset = db.findById('assets', id);
@@ -470,9 +511,8 @@ router.delete('/:id', auth, checkRole(['Admin']), (req, res) => {
     return res.status(404).json({ message: 'Asset not found.' });
   }
 
-  // Prevent deleting allocated assets directly
   if (asset.status === 'Allocated') {
-    return res.status(400).json({ message: 'Cannot delete an asset that is currently allocated. Please process a return first.' });
+    return res.status(400).json({ message: 'Cannot delete an allocated asset. Process a return first.' });
   }
 
   db.delete('assets', id);
@@ -481,34 +521,34 @@ router.delete('/:id', auth, checkRole(['Admin']), (req, res) => {
   res.json({ message: 'Asset deleted successfully.' });
 });
 
-// Admin Bulk Delete Assets
+// ==========================================
+// BULK DELETE — Admin only
+// ==========================================
 router.post('/bulk-delete', auth, checkRole(['Admin']), (req, res) => {
   const { ids } = req.body;
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ message: 'Valid asset ids array is required.' });
+    return res.status(400).json({ message: 'Valid asset IDs array is required.' });
   }
 
   const assets = db.read('assets');
-  const targetAssets = assets.filter(a => ids.includes(a.id));
+  const targets = assets.filter(a => ids.includes(a.id));
 
-  // Check if any is allocated
-  const allocated = targetAssets.filter(a => a.status === 'Allocated');
+  const allocated = targets.filter(a => a.status === 'Allocated');
   if (allocated.length > 0) {
     return res.status(400).json({
-      message: `Bulk delete aborted. ${allocated.length} of the selected assets are currently allocated. Return them first.`
+      message: `Bulk delete aborted. ${allocated.length} selected asset(s) are currently allocated. Return them first.`
     });
   }
 
   let deletedCount = 0;
-  targetAssets.forEach(a => {
+  targets.forEach(a => {
     db.delete('assets', a.id);
     logActivity(req.user.id, req.user.name, 'Bulk Delete', 'Asset', a.id, a, null, req);
     deletedCount++;
   });
 
-  res.json({ message: `Successfully deleted ${deletedCount} assets.` });
+  res.json({ message: `Successfully deleted ${deletedCount} asset(s).` });
 });
 
 router.isValidTransition = isValidTransition;
 module.exports = router;
-

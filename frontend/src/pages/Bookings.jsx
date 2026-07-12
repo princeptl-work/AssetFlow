@@ -447,7 +447,7 @@ const Bookings = () => {
         footer={
           <>
             <button className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>Close</button>
-            {selectedBooking && (selectedBooking.userId === user?.id || user?.role === 'Admin') && (
+            {selectedBooking && (selectedBooking.userId === user?.id || user?.role === 'Admin' || user?.role === 'Asset Manager' || user?.role === 'Department Head') && (
               <>
                 <button className="btn btn-secondary" onClick={() => handleOpenReschedule(selectedBooking)}>Reschedule</button>
                 <button className="btn btn-danger" onClick={() => handleCancelBooking(selectedBooking.id)}>Cancel Reservation</button>

@@ -4,27 +4,32 @@ const db = require('../db');
 const { auth, checkRole } = require('../authMiddleware');
 const { logActivity } = require('../logger');
 
-// Get all maintenance tickets
+// ==========================================
+// GET ALL MAINTENANCE TICKETS
+// Admin, Asset Manager: all tickets
+// Department Head: tickets for assets in their department
+// Employee: tickets they raised
+// ==========================================
 router.get('/', auth, (req, res) => {
   const tickets = db.read('maintenance') || [];
   const users = db.read('users');
   const assets = db.read('assets');
 
-  let filteredTickets = tickets;
+  let filtered = tickets;
+
   if (req.user.role === 'Employee') {
-    filteredTickets = tickets.filter(t => t.raisedByUserId === req.user.id);
+    filtered = tickets.filter(t => t.raisedByUserId === req.user.id);
   } else if (req.user.role === 'Department Head') {
-    filteredTickets = tickets.filter(t => {
+    filtered = tickets.filter(t => {
       const asset = assets.find(a => a.id === t.assetId);
       return asset && asset.departmentId === req.user.departmentId;
     });
   }
 
-  const joined = filteredTickets.map(t => {
+  const joined = filtered.map(t => {
     const asset = assets.find(a => a.id === t.assetId);
     const requester = users.find(u => u.id === t.raisedByUserId);
     const tech = t.technicianId ? users.find(u => u.id === t.technicianId) : null;
-
     return {
       ...t,
       assetName: asset ? asset.name : 'Unknown Asset',
@@ -37,7 +42,9 @@ router.get('/', auth, (req, res) => {
   res.json(joined);
 });
 
-// Get single maintenance details
+// ==========================================
+// GET SINGLE MAINTENANCE TICKET
+// ==========================================
 router.get('/:id', auth, (req, res) => {
   const { id } = req.params;
   const ticket = db.findById('maintenance', id);
@@ -47,7 +54,6 @@ router.get('/:id', auth, (req, res) => {
 
   const asset = db.findById('assets', ticket.assetId);
 
-  // Role-based scope check
   if (req.user.role === 'Employee' && ticket.raisedByUserId !== req.user.id) {
     return res.status(403).json({ message: 'Access denied. You can only view your own maintenance requests.' });
   }
@@ -61,18 +67,28 @@ router.get('/:id', auth, (req, res) => {
 
   res.json({
     ...ticket,
-    asset,
+    asset: asset || null,
     requester: requester ? { id: requester.id, name: requester.name, email: requester.email } : null,
     technician: tech ? { id: tech.id, name: tech.name } : null
   });
 });
 
-// Raise request (Employee/Any)
+// ==========================================
+// RAISE MAINTENANCE REQUEST
+// Any authenticated user (Employee, Dept Head, Asset Manager, Admin)
+// Schema: maintenance — assetId, raisedByUserId, issue, priority, description, status,
+//   technicianId, images, documents, timeline, createdAt(auto), updatedAt(auto)
+// ==========================================
 router.post('/', auth, (req, res) => {
   const { assetId, issue, priority, description, images, documents } = req.body;
 
   if (!assetId || !issue || !priority) {
-    return res.status(400).json({ message: 'Asset, Issue summary, and Priority are required.' });
+    return res.status(400).json({ message: 'Asset, issue summary, and priority are required.' });
+  }
+
+  const validPriorities = ['Low', 'Medium', 'High', 'Critical'];
+  if (!validPriorities.includes(priority)) {
+    return res.status(400).json({ message: `Priority must be one of: ${validPriorities.join(', ')}` });
   }
 
   const asset = db.findById('assets', assetId);
@@ -80,17 +96,27 @@ router.post('/', auth, (req, res) => {
     return res.status(404).json({ message: 'Asset not found.' });
   }
 
-  // Creating ticket
+  // Employees can only raise requests for assets allocated to them
+  if (req.user.role === 'Employee' && asset.allocatedToUserId !== req.user.id) {
+    return res.status(403).json({ message: 'You can only raise maintenance requests for assets allocated to you.' });
+  }
+
+  // Department Heads can raise for assets in their department
+  if (req.user.role === 'Department Head' && asset.departmentId !== req.user.departmentId) {
+    return res.status(403).json({ message: 'You can only raise maintenance requests for assets in your department.' });
+  }
+
+  // Schema: maintenance
   const ticket = db.create('maintenance', {
     assetId,
     raisedByUserId: req.user.id,
     issue,
-    priority, // Low, Medium, High, Critical
+    priority,
     description: description || '',
-    status: 'Pending', // Pending, Approved, Technician Assigned, In Progress, Resolved, Closed, Rejected
+    status: 'Pending',
     technicianId: '',
-    images: images || [],
-    documents: documents || [],
+    images: Array.isArray(images) ? images : [],
+    documents: Array.isArray(documents) ? documents : [],
     timeline: [
       {
         status: 'Pending',
@@ -100,13 +126,12 @@ router.post('/', auth, (req, res) => {
     ]
   });
 
-  // Notify Asset Managers
+  // Notify Asset Managers and Admins
   const users = db.read('users');
-  const managers = users.filter(u => u.role === 'Asset Manager' || u.role === 'Admin');
-  managers.forEach(mgr => {
+  users.filter(u => u.role === 'Asset Manager' || u.role === 'Admin').forEach(mgr => {
     db.create('notifications', {
       userId: mgr.id,
-      message: `New maintenance request raised for asset "${asset.name}" (${asset.assetTag}) - Priority: ${priority}.`,
+      message: `New maintenance request for asset "${asset.name}" (${asset.assetTag}) — Priority: ${priority}.`,
       type: 'Maintenance Raised',
       link: '/maintenance',
       isRead: false,
@@ -119,10 +144,18 @@ router.post('/', auth, (req, res) => {
   res.status(201).json(ticket);
 });
 
-// Approve / Reject Request (Asset Manager / Admin)
+// ==========================================
+// APPROVE / REJECT TICKET — Admin, Asset Manager
+// On Approve: asset status -> Under Maintenance
+// On Reject: ticket status -> Rejected
+// ==========================================
 router.put('/:id/approve', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   const { id } = req.params;
-  const { action, notes } = req.body; // action: 'Approve' or 'Reject'
+  const { action, notes } = req.body;
+
+  if (!action || !['Approve', 'Reject'].includes(action)) {
+    return res.status(400).json({ message: 'Action must be "Approve" or "Reject".' });
+  }
 
   const ticket = db.findById('maintenance', id);
   if (!ticket) {
@@ -130,7 +163,7 @@ router.put('/:id/approve', auth, checkRole(['Admin', 'Asset Manager']), (req, re
   }
 
   if (ticket.status !== 'Pending') {
-    return res.status(400).json({ message: `Cannot evaluate ticket in status "${ticket.status}".` });
+    return res.status(400).json({ message: `Cannot evaluate ticket in status "${ticket.status}". Only Pending tickets can be approved/rejected.` });
   }
 
   const asset = db.findById('assets', ticket.assetId);
@@ -140,42 +173,34 @@ router.put('/:id/approve', auth, checkRole(['Admin', 'Asset Manager']), (req, re
 
   const originalTicket = { ...ticket };
   const originalAsset = { ...asset };
-
   const timeline = [...(ticket.timeline || [])];
 
   if (action === 'Approve') {
-    // Update ticket
     timeline.push({
       status: 'Approved',
       timestamp: new Date().toISOString(),
       notes: notes || `Approved by ${req.user.name}`
     });
 
-    db.update('maintenance', id, {
-      status: 'Approved',
-      timeline
-    });
+    // Schema: maintenance — status, timeline
+    db.update('maintenance', id, { status: 'Approved', timeline });
 
-    // Sync Asset Status: Change to Under Maintenance
+    // Schema: assets — status, history
     const history = [...(asset.history || [])];
     history.push({
       id: `HIST-${Date.now()}`,
-      eventType: 'Maintenance',
+      eventType: 'Under Maintenance',
       date: new Date().toISOString(),
       user: req.user.name,
       userId: req.user.id,
-      notes: `Ticket approved. Transferred to Under Maintenance. Ticket ID: ${id}`
+      notes: `Maintenance approved. Ticket ID: ${id}`
     });
+    db.update('assets', asset.id, { status: 'Under Maintenance', history });
 
-    db.update('assets', asset.id, {
-      status: 'Under Maintenance',
-      history
-    });
-
-    // Notify requester
+    // Schema: notifications
     db.create('notifications', {
       userId: ticket.raisedByUserId,
-      message: `Your maintenance request for asset "${asset.name}" has been APPROVED.`,
+      message: `Your maintenance request for asset "${asset.name}" has been APPROVED and is now Under Maintenance.`,
       type: 'Maintenance Approved',
       link: '/maintenance',
       isRead: false,
@@ -185,24 +210,21 @@ router.put('/:id/approve', auth, checkRole(['Admin', 'Asset Manager']), (req, re
     logActivity(req.user.id, req.user.name, 'Approve Maintenance', 'Maintenance', id, originalTicket, db.findById('maintenance', id), req);
     logActivity(req.user.id, req.user.name, 'Set Under Maintenance', 'Asset', asset.id, originalAsset, db.findById('assets', asset.id), req);
 
-    res.json({ message: 'Maintenance request approved. Asset status set to Under Maintenance.' });
+    return res.json({ message: 'Maintenance request approved. Asset set to Under Maintenance.' });
   } else {
-    // Reject Ticket
     timeline.push({
       status: 'Rejected',
       timestamp: new Date().toISOString(),
       notes: notes || `Rejected by ${req.user.name}`
     });
 
-    const { updated } = db.update('maintenance', id, {
-      status: 'Rejected',
-      timeline
-    });
+    // Schema: maintenance — status, timeline
+    const { updated } = db.update('maintenance', id, { status: 'Rejected', timeline });
 
-    // Notify requester
+    // Schema: notifications
     db.create('notifications', {
       userId: ticket.raisedByUserId,
-      message: `Your maintenance request for asset "${asset.name}" has been REJECTED: ${notes || 'No reason provided.'}`,
+      message: `Your maintenance request for asset "${asset.name}" has been REJECTED. ${notes || 'No reason provided.'}`,
       type: 'Maintenance Rejected',
       link: '/maintenance',
       isRead: false,
@@ -211,28 +233,37 @@ router.put('/:id/approve', auth, checkRole(['Admin', 'Asset Manager']), (req, re
 
     logActivity(req.user.id, req.user.name, 'Reject Maintenance', 'Maintenance', id, originalTicket, updated, req);
 
-    res.json({ message: 'Maintenance request rejected.' });
+    return res.json({ message: 'Maintenance request rejected.' });
   }
 });
 
-// Assign Technician (Asset Manager / Admin)
+// ==========================================
+// ASSIGN TECHNICIAN — Admin, Asset Manager
+// Schema: maintenance — status, technicianId, timeline
+// ==========================================
 router.put('/:id/assign', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   const { id } = req.params;
   const { technicianId, notes } = req.body;
+
+  if (!technicianId) {
+    return res.status(400).json({ message: 'Technician ID is required.' });
+  }
 
   const ticket = db.findById('maintenance', id);
   if (!ticket) {
     return res.status(404).json({ message: 'Maintenance ticket not found.' });
   }
 
-  // Must be approved first
   if (ticket.status !== 'Approved' && ticket.status !== 'Technician Assigned') {
-    return res.status(400).json({ message: `Cannot assign technician in status "${ticket.status}".` });
+    return res.status(400).json({ message: `Cannot assign technician. Ticket must be Approved first (current: "${ticket.status}").` });
   }
 
   const technician = db.findById('users', technicianId);
   if (!technician) {
     return res.status(400).json({ message: 'Technician not found.' });
+  }
+  if (technician.status !== 'Active') {
+    return res.status(400).json({ message: 'Cannot assign an inactive user as technician.' });
   }
 
   const original = { ...ticket };
@@ -240,19 +271,21 @@ router.put('/:id/assign', auth, checkRole(['Admin', 'Asset Manager']), (req, res
   timeline.push({
     status: 'Technician Assigned',
     timestamp: new Date().toISOString(),
-    notes: `Technician "${technician.name}" assigned. Notes: ${notes || 'None'}`
+    notes: `Technician "${technician.name}" assigned. ${notes || ''}`
   });
 
+  // Schema: maintenance — status, technicianId, timeline
   const { updated } = db.update('maintenance', id, {
     status: 'Technician Assigned',
     technicianId,
     timeline
   });
 
-  // Notify technician
+  // Schema: notifications
+  const targetAsset = db.findById('assets', ticket.assetId);
   db.create('notifications', {
     userId: technician.id,
-    message: `You have been assigned to maintenance ticket "${ticket.issue}" (Asset Tag: ${db.findById('assets', ticket.assetId).assetTag}).`,
+    message: `You have been assigned to maintenance ticket "${ticket.issue}" (Asset: ${targetAsset ? targetAsset.assetTag : 'N/A'}).`,
     type: 'Maintenance Assigned',
     link: '/maintenance',
     isRead: false,
@@ -264,7 +297,10 @@ router.put('/:id/assign', auth, checkRole(['Admin', 'Asset Manager']), (req, res
   res.json(updated);
 });
 
-// Start maintenance (Technician or Manager)
+// ==========================================
+// START MAINTENANCE WORK — Assigned technician, Admin, Asset Manager
+// Schema: maintenance — status, timeline
+// ==========================================
 router.put('/:id/start', auth, (req, res) => {
   const { id } = req.params;
   const ticket = db.findById('maintenance', id);
@@ -272,9 +308,9 @@ router.put('/:id/start', auth, (req, res) => {
     return res.status(404).json({ message: 'Maintenance ticket not found.' });
   }
 
-  // Ensure authorized (assigned tech or Asset Manager/Admin)
   const isAssignedTech = ticket.technicianId === req.user.id;
   const isPrivileged = req.user.role === 'Admin' || req.user.role === 'Asset Manager';
+
   if (!isAssignedTech && !isPrivileged) {
     return res.status(403).json({ message: 'You are not assigned to this ticket.' });
   }
@@ -291,17 +327,19 @@ router.put('/:id/start', auth, (req, res) => {
     notes: `Work started by ${req.user.name}.`
   });
 
-  const { updated } = db.update('maintenance', id, {
-    status: 'In Progress',
-    timeline
-  });
+  // Schema: maintenance — status, timeline
+  const { updated } = db.update('maintenance', id, { status: 'In Progress', timeline });
 
   logActivity(req.user.id, req.user.name, 'Start Maintenance', 'Maintenance', id, original, updated, req);
 
   res.json(updated);
 });
 
-// Resolve Maintenance (Technician or Manager)
+// ==========================================
+// RESOLVE MAINTENANCE — Assigned technician, Admin, Asset Manager
+// On Resolve: asset status -> Available
+// Schema: maintenance — status, timeline | assets — status, history
+// ==========================================
 router.put('/:id/resolve', auth, (req, res) => {
   const { id } = req.params;
   const { notes } = req.body;
@@ -313,17 +351,18 @@ router.put('/:id/resolve', auth, (req, res) => {
 
   const isAssignedTech = ticket.technicianId === req.user.id;
   const isPrivileged = req.user.role === 'Admin' || req.user.role === 'Asset Manager';
+
   if (!isAssignedTech && !isPrivileged) {
     return res.status(403).json({ message: 'You are not authorized to resolve this ticket.' });
   }
 
   if (ticket.status !== 'In Progress') {
-    return res.status(400).json({ message: 'Cannot resolve ticket: Work has not started.' });
+    return res.status(400).json({ message: `Cannot resolve ticket. Work must be In Progress first (current: "${ticket.status}").` });
   }
 
   const asset = db.findById('assets', ticket.assetId);
   if (!asset) {
-    return res.status(404).json({ message: 'Asset not found.' });
+    return res.status(404).json({ message: 'Associated asset not found.' });
   }
 
   const originalTicket = { ...ticket };
@@ -333,16 +372,13 @@ router.put('/:id/resolve', auth, (req, res) => {
   timeline.push({
     status: 'Resolved',
     timestamp: new Date().toISOString(),
-    notes: notes || 'Resolved successfully.'
+    notes: notes || 'Maintenance resolved successfully.'
   });
 
-  // Update ticket
-  db.update('maintenance', id, {
-    status: 'Resolved',
-    timeline
-  });
+  // Schema: maintenance — status, timeline
+  db.update('maintenance', id, { status: 'Resolved', timeline });
 
-  // Automatically update asset to Available
+  // Schema: assets — status, history
   const history = [...(asset.history || [])];
   history.push({
     id: `HIST-${Date.now()}`,
@@ -350,18 +386,14 @@ router.put('/:id/resolve', auth, (req, res) => {
     date: new Date().toISOString(),
     user: req.user.name,
     userId: req.user.id,
-    notes: `Maintenance resolved. Returned to warehouse as Available. Ticket ID: ${id}`
+    notes: `Maintenance resolved. Asset returned to Available. Ticket ID: ${id}. ${notes || ''}`
   });
+  db.update('assets', asset.id, { status: 'Available', history });
 
-  db.update('assets', asset.id, {
-    status: 'Available',
-    history
-  });
-
-  // Notify requester
+  // Schema: notifications
   db.create('notifications', {
     userId: ticket.raisedByUserId,
-    message: `Maintenance completed for asset "${asset.name}". Verified status: Available.`,
+    message: `Maintenance on asset "${asset.name}" (${asset.assetTag}) has been resolved. Asset is now Available.`,
     type: 'Maintenance Completed',
     link: '/maintenance',
     isRead: false,
@@ -374,7 +406,10 @@ router.put('/:id/resolve', auth, (req, res) => {
   res.json({ message: 'Maintenance resolved. Asset returned to Available.' });
 });
 
-// Close Ticket (Requester, Manager, Admin)
+// ==========================================
+// CLOSE TICKET — Requester, Admin, Asset Manager
+// Schema: maintenance — status, timeline
+// ==========================================
 router.put('/:id/close', auth, (req, res) => {
   const { id } = req.params;
   const { notes } = req.body;
@@ -386,12 +421,13 @@ router.put('/:id/close', auth, (req, res) => {
 
   const isOwner = ticket.raisedByUserId === req.user.id;
   const isPrivileged = req.user.role === 'Admin' || req.user.role === 'Asset Manager';
+
   if (!isOwner && !isPrivileged) {
     return res.status(403).json({ message: 'Only the ticket requester or asset managers can close this ticket.' });
   }
 
   if (ticket.status !== 'Resolved') {
-    return res.status(400).json({ message: 'Cannot close ticket. It must be resolved first.' });
+    return res.status(400).json({ message: `Cannot close ticket. It must be Resolved first (current: "${ticket.status}").` });
   }
 
   const original = { ...ticket };
@@ -399,13 +435,11 @@ router.put('/:id/close', auth, (req, res) => {
   timeline.push({
     status: 'Closed',
     timestamp: new Date().toISOString(),
-    notes: notes || 'Closed by user.'
+    notes: notes || 'Ticket closed.'
   });
 
-  const { updated } = db.update('maintenance', id, {
-    status: 'Closed',
-    timeline
-  });
+  // Schema: maintenance — status, timeline
+  const { updated } = db.update('maintenance', id, { status: 'Closed', timeline });
 
   logActivity(req.user.id, req.user.name, 'Close Maintenance Ticket', 'Maintenance', id, original, updated, req);
 

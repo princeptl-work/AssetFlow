@@ -6,8 +6,7 @@
     "type": "Overdue Return Alert",
     "link": "/assets",
     "isRead": false,
-    "timestamp": "2026-07-12T06:02:57.104Z",
-    "createdAt": "2026-07-12T06:02:57.104Z"
+    "timestamp": "2026-07-12T06:02:57.104Z"
   },
   {
     "id": "NOT-1783836177105-177",
@@ -16,8 +15,7 @@
     "type": "Overdue Return Alert",
     "link": "/assets",
     "isRead": false,
-    "timestamp": "2026-07-12T06:02:57.105Z",
-    "createdAt": "2026-07-12T06:02:57.105Z"
+    "timestamp": "2026-07-12T06:02:57.105Z"
   },
   {
     "id": "NOT-1783836177106-413",
@@ -26,7 +24,15 @@
     "type": "Overdue Return Alert",
     "link": "/assets",
     "isRead": false,
-    "timestamp": "2026-07-12T06:02:57.106Z",
-    "createdAt": "2026-07-12T06:02:57.106Z"
+    "timestamp": "2026-07-12T06:02:57.106Z"
+  },
+  {
+    "id": "NOT-1783839463296-345",
+    "userId": "USR0002",
+    "message": "Your role has been updated to \"Department Head\" by the Administrator.",
+    "type": "Role Promotion",
+    "link": "/dashboard",
+    "isRead": false,
+    "timestamp": "2026-07-12T06:57:43.296Z"
   }
 ]

@@ -6,11 +6,10 @@
     "action": "Login",
     "entity": "User",
     "entityId": "USR0001",
-    "previousValue": "",
+    "previousValue": null,
     "newValue": "{\"action\":\"logged_in\"}",
     "ip": "::1",
-    "timestamp": "2026-07-12T06:09:49.654Z",
-    "createdAt": "2026-07-12T06:09:49.654Z"
+    "timestamp": "2026-07-12T06:09:49.654Z"
   },
   {
     "id": "LOG-1783836926379-659",
@@ -19,10 +18,93 @@
     "action": "Login",
     "entity": "User",
     "entityId": "USR0004",
-    "previousValue": "",
+    "previousValue": null,
     "newValue": "{\"action\":\"logged_in\"}",
     "ip": "::1",
-    "timestamp": "2026-07-12T06:15:26.378Z",
-    "createdAt": "2026-07-12T06:15:26.379Z"
+    "timestamp": "2026-07-12T06:15:26.378Z"
+  },
+  {
+    "id": "LOG-1783837584526-667",
+    "userId": "system",
+    "userName": "System",
+    "action": "Signup",
+    "entity": "User",
+    "entityId": "USR0005",
+    "previousValue": null,
+    "newValue": "{\"email\":\"vrajprajapati6004@gmail.com\",\"name\":\"Vraj Prajapati\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:26:24.525Z"
+  },
+  {
+    "id": "LOG-1783837741328-811",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Login",
+    "entity": "User",
+    "entityId": "USR0001",
+    "previousValue": null,
+    "newValue": "{\"action\":\"logged_in\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:29:01.327Z"
+  },
+  {
+    "id": "LOG-1783837781827-131",
+    "userId": "USR0004",
+    "userName": "Marcus Wright",
+    "action": "Login",
+    "entity": "User",
+    "entityId": "USR0004",
+    "previousValue": null,
+    "newValue": "{\"action\":\"logged_in\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:29:41.826Z"
+  },
+  {
+    "id": "LOG-1783838014836-934",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Login",
+    "entity": "User",
+    "entityId": "USR0001",
+    "previousValue": null,
+    "newValue": "{\"action\":\"logged_in\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:33:34.834Z"
+  },
+  {
+    "id": "LOG-1783838944350-295",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Deactivate",
+    "entity": "User",
+    "entityId": "USR0005",
+    "previousValue": "Active",
+    "newValue": "Inactive",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:49:04.350Z"
+  },
+  {
+    "id": "LOG-1783838947385-202",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Reactivate",
+    "entity": "User",
+    "entityId": "USR0005",
+    "previousValue": "Inactive",
+    "newValue": "Active",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:49:07.384Z"
+  },
+  {
+    "id": "LOG-1783839463296-987",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Promote",
+    "entity": "User",
+    "entityId": "USR0002",
+    "previousValue": "Asset Manager",
+    "newValue": "Department Head",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:57:43.296Z"
   }
 ]

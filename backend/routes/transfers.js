@@ -4,30 +4,39 @@ const db = require('../db');
 const { auth, checkRole } = require('../authMiddleware');
 const { logActivity } = require('../logger');
 
-// Get all transfer requests
+// ==========================================
+// GET ALL TRANSFER REQUESTS
+// Admin, Asset Manager: all transfers
+// Department Head: transfers involving their department's assets or target dept
+// Employee: transfers they requested or that target them
+// ==========================================
 router.get('/', auth, (req, res) => {
   const transfers = db.read('transfers') || [];
-  
   const assets = db.read('assets');
   const users = db.read('users');
   const depts = db.read('departments');
 
-  let filteredTransfers = transfers;
+  let filtered = transfers;
+
   if (req.user.role === 'Employee') {
-    filteredTransfers = transfers.filter(t => t.requestedByUserId === req.user.id || t.targetUserId === req.user.id);
+    filtered = transfers.filter(t =>
+      t.requestedByUserId === req.user.id || t.targetUserId === req.user.id
+    );
   } else if (req.user.role === 'Department Head') {
-    filteredTransfers = transfers.filter(t => {
+    filtered = transfers.filter(t => {
       const asset = assets.find(a => a.id === t.assetId);
       const sourceDeptId = asset ? asset.departmentId : null;
       return sourceDeptId === req.user.departmentId || t.targetDepartmentId === req.user.departmentId;
     });
   }
 
-  const joined = filteredTransfers.map(t => {
+  const joined = filtered.map(t => {
     const asset = assets.find(a => a.id === t.assetId);
     const requester = users.find(u => u.id === t.requestedByUserId);
-    const targetUser = users.find(u => u.id === t.targetUserId);
-    const targetDept = depts.find(d => d.id === t.targetDepartmentId);
+    const targetUser = t.targetUserId ? users.find(u => u.id === t.targetUserId) : null;
+    const targetDept = t.targetDepartmentId ? depts.find(d => d.id === t.targetDepartmentId) : null;
+    const deptHeadApprover = t.deptHeadApproverId ? users.find(u => u.id === t.deptHeadApproverId) : null;
+    const managerApprover = t.assetManagerApproverId ? users.find(u => u.id === t.assetManagerApproverId) : null;
 
     return {
       ...t,
@@ -35,14 +44,22 @@ router.get('/', auth, (req, res) => {
       assetTag: asset ? asset.assetTag : 'N/A',
       requesterName: requester ? requester.name : 'Unknown User',
       targetUserName: targetUser ? targetUser.name : 'N/A',
-      targetDepartmentName: targetDept ? targetDept.name : 'N/A'
+      targetDepartmentName: targetDept ? targetDept.name : 'N/A',
+      deptHeadApproverName: deptHeadApprover ? deptHeadApprover.name : 'N/A',
+      managerApproverName: managerApprover ? managerApprover.name : 'N/A'
     };
   });
 
   res.json(joined);
 });
 
-// Create transfer request (Employee or Dept Head or Admin)
+// ==========================================
+// CREATE TRANSFER REQUEST
+// Any role can request — subject to ownership/department constraints
+// Schema: transfers — assetId, requestedByUserId, targetUserId, targetDepartmentId, status,
+//   deptHeadApproverId, assetManagerApproverId, notes, requestDate,
+//   deptHeadApprovalDate, assetManagerApprovalDate, createdAt(auto), updatedAt(auto)
+// ==========================================
 router.post('/', auth, (req, res) => {
   const { assetId, targetUserId, targetDepartmentId, notes } = req.body;
 
@@ -55,23 +72,26 @@ router.post('/', auth, (req, res) => {
     return res.status(404).json({ message: 'Asset not found.' });
   }
 
-  // Enforce validation: Asset must be allocated
+  // Only allocated assets can be transferred
   if (asset.status !== 'Allocated') {
     return res.status(400).json({ message: 'Only currently allocated assets can be transferred.' });
   }
 
-  // Auth: An employee can only request transfer for an asset allocated to them.
-  // Admin, Asset Manager, and Department Head can request for others.
-  const isOwner = asset.allocatedToUserId === req.user.id;
+  // Authorization: must be the holder, the dept head of the holding dept, Admin, or Asset Manager
+  const isHolder = asset.allocatedToUserId === req.user.id;
   const isDeptHeadOfAsset = req.user.role === 'Department Head' && asset.departmentId === req.user.departmentId;
   const isPrivileged = req.user.role === 'Admin' || req.user.role === 'Asset Manager';
 
-  if (!isOwner && !isDeptHeadOfAsset && !isPrivileged) {
-    return res.status(403).json({ message: 'You can only request transfers for your own or your department\'s assets.' });
+  if (!isHolder && !isDeptHeadOfAsset && !isPrivileged) {
+    return res.status(403).json({ message: 'You can only request transfers for assets allocated to you or your department.' });
   }
 
-  // Validate target user if provided
-  if (targetUserId) {
+  if (!targetUserId && !targetDepartmentId) {
+    return res.status(400).json({ message: 'Must specify either a target employee or a target department.' });
+  }
+
+  // Validate target user
+  if (targetUserId && targetUserId !== '') {
     const target = db.findById('users', targetUserId);
     if (!target) {
       return res.status(400).json({ message: 'Target employee does not exist.' });
@@ -79,10 +99,14 @@ router.post('/', auth, (req, res) => {
     if (target.status !== 'Active') {
       return res.status(400).json({ message: 'Cannot transfer to an inactive employee.' });
     }
+    // Prevent self-transfer
+    if (targetUserId === asset.allocatedToUserId) {
+      return res.status(400).json({ message: 'Cannot transfer to the current holder.' });
+    }
   }
 
-  // Validate target department if provided
-  if (targetDepartmentId) {
+  // Validate target department
+  if (targetDepartmentId && targetDepartmentId !== '') {
     const targetDept = db.findById('departments', targetDepartmentId);
     if (!targetDept) {
       return res.status(400).json({ message: 'Target department does not exist.' });
@@ -92,17 +116,16 @@ router.post('/', auth, (req, res) => {
     }
   }
 
-  if (!targetUserId && !targetDepartmentId) {
-    return res.status(400).json({ message: 'Must specify either a target employee or department.' });
-  }
-
-  // Check if a transfer request is already pending for this asset
+  // Prevent duplicate pending transfer for same asset
   const existingTransfers = db.read('transfers') || [];
-  const pending = existingTransfers.find(t => t.assetId === assetId && (t.status === 'Requested' || t.status === 'Dept Head Approved'));
+  const pending = existingTransfers.find(t =>
+    t.assetId === assetId && (t.status === 'Requested' || t.status === 'Dept Head Approved')
+  );
   if (pending) {
     return res.status(400).json({ message: 'A transfer request is already pending for this asset.' });
   }
 
+  // Schema: transfers
   const newTransfer = db.create('transfers', {
     assetId,
     requestedByUserId: req.user.id,
@@ -117,13 +140,13 @@ router.post('/', auth, (req, res) => {
     assetManagerApprovalDate: ''
   });
 
-  // Notify target department head
+  // Notify department head of the source department
   if (asset.departmentId) {
     const dept = db.findById('departments', asset.departmentId);
     if (dept && dept.managerId) {
       db.create('notifications', {
         userId: dept.managerId,
-        message: `Transfer requested for asset "${asset.name}" (${asset.assetTag}) to another unit. Needs your review.`,
+        message: `Transfer requested for asset "${asset.name}" (${asset.assetTag}). Requires your review.`,
         type: 'Transfer Review Requested',
         link: '/transfers',
         isRead: false,
@@ -137,7 +160,11 @@ router.post('/', auth, (req, res) => {
   res.status(201).json(newTransfer);
 });
 
-// Department Head Approval
+// ==========================================
+// DEPARTMENT HEAD APPROVAL
+// Department Head: must own the asset's department
+// Admin: can bypass
+// ==========================================
 router.put('/:id/approve-dept', auth, checkRole(['Admin', 'Department Head']), (req, res) => {
   const { id } = req.params;
   const transfer = db.findById('transfers', id);
@@ -146,33 +173,34 @@ router.put('/:id/approve-dept', auth, checkRole(['Admin', 'Department Head']), (
   }
 
   if (transfer.status !== 'Requested') {
-    return res.status(400).json({ message: `Cannot approve. Transfer request is currently in "${transfer.status}" status.` });
+    return res.status(400).json({ message: `Cannot approve. Transfer is in "${transfer.status}" status.` });
   }
 
   const asset = db.findById('assets', transfer.assetId);
   if (!asset) {
-    return res.status(404).json({ message: 'Asset not found.' });
+    return res.status(404).json({ message: 'Associated asset not found.' });
   }
 
-  // Validate department head authority
+  // Dept Head can only approve for their own department
   if (req.user.role === 'Department Head' && asset.departmentId !== req.user.departmentId) {
-    return res.status(403).json({ message: 'You can only approve transfer requests within your department.' });
+    return res.status(403).json({ message: 'You can only approve transfers within your department.' });
   }
 
   const original = { ...transfer };
+
+  // Schema fields: status, deptHeadApproverId, deptHeadApprovalDate
   const { updated } = db.update('transfers', id, {
     status: 'Dept Head Approved',
     deptHeadApproverId: req.user.id,
     deptHeadApprovalDate: new Date().toISOString()
   });
 
-  // Notify Asset Managers
+  // Notify Asset Managers and Admins for final approval
   const users = db.read('users');
-  const assetManagers = users.filter(u => u.role === 'Asset Manager' || u.role === 'Admin');
-  assetManagers.forEach(am => {
+  users.filter(u => u.role === 'Asset Manager' || u.role === 'Admin').forEach(am => {
     db.create('notifications', {
       userId: am.id,
-      message: `Transfer of asset "${asset.name}" approved by Dept Head, pending final asset manager approval.`,
+      message: `Transfer of asset "${asset.name}" (${asset.assetTag}) approved by Dept Head. Pending final manager approval.`,
       type: 'Transfer Final Approval Pending',
       link: '/transfers',
       isRead: false,
@@ -185,7 +213,10 @@ router.put('/:id/approve-dept', auth, checkRole(['Admin', 'Department Head']), (
   res.json(updated);
 });
 
-// Asset Manager Final Approval
+// ==========================================
+// ASSET MANAGER FINAL APPROVAL + REALLOCATION
+// Admin or Asset Manager
+// ==========================================
 router.put('/:id/approve-manager', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   const { id } = req.params;
   const transfer = db.findById('transfers', id);
@@ -193,65 +224,69 @@ router.put('/:id/approve-manager', auth, checkRole(['Admin', 'Asset Manager']), 
     return res.status(404).json({ message: 'Transfer request not found.' });
   }
 
-  // Allow bypass of department head if admin/manager approves directly?
-  // Let's enforce standard workflow: Requested -> Dept Head Approved -> Asset Manager Approved
+  // Must be Dept Head Approved or Requested (Admin can bypass dept head step)
   if (transfer.status !== 'Dept Head Approved' && transfer.status !== 'Requested') {
-    return res.status(400).json({ message: 'Transfer request is not ready for final manager approval.' });
+    return res.status(400).json({ message: 'Transfer is not ready for final manager approval.' });
   }
 
   const asset = db.findById('assets', transfer.assetId);
   if (!asset) {
-    return res.status(404).json({ message: 'Asset not found.' });
+    return res.status(404).json({ message: 'Associated asset not found.' });
   }
+
+  const targetUser = transfer.targetUserId ? db.findById('users', transfer.targetUserId) : null;
+  const targetDept = transfer.targetDepartmentId ? db.findById('departments', transfer.targetDepartmentId) : null;
+  const dhUser = transfer.deptHeadApproverId ? db.findById('users', transfer.deptHeadApproverId) : null;
 
   const originalTransfer = { ...transfer };
   const originalAsset = { ...asset };
 
-  // Perform reallocation
-  const targetUser = transfer.targetUserId ? db.findById('users', transfer.targetUserId) : null;
-  const targetDept = transfer.targetDepartmentId ? db.findById('departments', transfer.targetDepartmentId) : null;
-
+  // Append history entry to asset
   const history = [...(asset.history || [])];
-  const approverNames = `DH: ${transfer.deptHeadApproverId ? db.findById('users', transfer.deptHeadApproverId).name : 'Direct'}, AM: ${req.user.name}`;
-  
+  const approverNames = `DH: ${dhUser ? dhUser.name : 'Bypassed'}, AM: ${req.user.name}`;
+  const targetLabel = targetUser ? targetUser.name : (targetDept ? `Dept: ${targetDept.name}` : 'Unknown');
+
   history.push({
     id: `HIST-${Date.now()}`,
     eventType: 'Transferred',
     date: new Date().toISOString(),
     user: req.user.name,
     userId: req.user.id,
-    notes: `Transferred to ${targetUser ? targetUser.name : `Dept: ${targetDept.name}`}. Approved by ${approverNames}. Notes: ${transfer.notes}`
+    notes: `Transferred to ${targetLabel}. Approved by: ${approverNames}. Notes: ${transfer.notes || 'None'}`
   });
 
-  // Update Asset
+  // Update asset — schema fields: allocatedToUserId, departmentId, allocatedDate, history
   db.update('assets', asset.id, {
     allocatedToUserId: transfer.targetUserId || '',
-    departmentId: targetUser ? (targetUser.departmentId || transfer.targetDepartmentId || '') : (transfer.targetDepartmentId || ''),
+    departmentId: targetUser
+      ? (targetUser.departmentId || transfer.targetDepartmentId || asset.departmentId || '')
+      : (transfer.targetDepartmentId || asset.departmentId || ''),
     allocatedDate: new Date().toISOString().split('T')[0],
     history
   });
 
-  // Update Transfer
+  // Update transfer — schema fields: status, assetManagerApproverId, assetManagerApprovalDate
   const { updated } = db.update('transfers', id, {
     status: 'Reallocated',
     assetManagerApproverId: req.user.id,
     assetManagerApprovalDate: new Date().toISOString()
   });
 
-  // Notifications
+  // Notify requester
   db.create('notifications', {
     userId: transfer.requestedByUserId,
-    message: `Your transfer request for asset "${asset.name}" has been APPROVED and successfully reallocated.`,
+    message: `Your transfer request for asset "${asset.name}" has been APPROVED and completed.`,
     type: 'Transfer Approved',
     link: '/assets',
     isRead: false,
     timestamp: new Date().toISOString()
   });
 
+  // Notify new holder
   if (transfer.targetUserId) {
     db.create('notifications', {
       userId: transfer.targetUserId,
-      message: `Asset "${asset.name}" has been transferred and allocated to you.`,
+      message: `Asset "${asset.name}" (${asset.assetTag}) has been transferred and allocated to you.`,
       type: 'Asset Assigned',
       link: '/assets',
       isRead: false,
@@ -265,7 +300,10 @@ router.put('/:id/approve-manager', auth, checkRole(['Admin', 'Asset Manager']), 
   res.json(updated);
 });
 
-// Reject Transfer Request
+// ==========================================
+// REJECT TRANSFER REQUEST
+// Dept Head (of source dept), Admin, Asset Manager
+// ==========================================
 router.put('/:id/reject', auth, (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
@@ -274,9 +312,12 @@ router.put('/:id/reject', auth, (req, res) => {
     return res.status(404).json({ message: 'Transfer request not found.' });
   }
 
+  if (transfer.status === 'Reallocated' || transfer.status === 'Rejected') {
+    return res.status(400).json({ message: `Cannot reject. Transfer is already "${transfer.status}".` });
+  }
+
   const asset = db.findById('assets', transfer.assetId);
 
-  // Check auth: Requester's Dept Head, Admin, or Asset Manager can reject
   const isDeptHeadOfAsset = req.user.role === 'Department Head' && asset && asset.departmentId === req.user.departmentId;
   const isPrivileged = req.user.role === 'Admin' || req.user.role === 'Asset Manager';
 
@@ -284,17 +325,15 @@ router.put('/:id/reject', auth, (req, res) => {
     return res.status(403).json({ message: 'You are not authorized to reject this transfer request.' });
   }
 
-  if (transfer.status === 'Reallocated' || transfer.status === 'Rejected') {
-    return res.status(400).json({ message: `Cannot reject. Transfer request is already in "${transfer.status}" status.` });
-  }
-
   const original = { ...transfer };
+
+  // Schema field: status, notes
   const { updated } = db.update('transfers', id, {
     status: 'Rejected',
     notes: `${transfer.notes ? transfer.notes + ' | ' : ''}Rejected: ${reason || 'No reason provided.'}`
   });
 
-  // Notify Requester
+  // Notify requester
   db.create('notifications', {
     userId: transfer.requestedByUserId,
     message: `Your transfer request for asset "${asset ? asset.name : 'Asset'}" was REJECTED: ${reason || 'No reason provided.'}`,

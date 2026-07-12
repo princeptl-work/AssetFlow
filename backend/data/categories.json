@@ -8,7 +8,8 @@
     "manufacturer": "Apple/Dell/HP",
     "description": "Laptops, desktops, monitors, keyboards, mice, and other peripherals.",
     "status": "Active",
-    "createdAt": "2026-07-12T04:28:51.626Z"
+    "createdAt": "2026-07-12T04:28:51.626Z",
+    "updatedAt": ""
   },
   {
     "id": "CAT-1783830531627-149",
@@ -19,7 +20,8 @@
     "manufacturer": "Herman Miller/Ikea",
     "description": "Office chairs, standing desks, conference tables, cabinets.",
     "status": "Active",
-    "createdAt": "2026-07-12T04:28:51.627Z"
+    "createdAt": "2026-07-12T04:28:51.627Z",
+    "updatedAt": ""
   },
   {
     "id": "CAT-1783830531630-124",
@@ -30,7 +32,8 @@
     "manufacturer": "Tesla/Toyota",
     "description": "Company cars, vans, shuttle buses.",
     "status": "Active",
-    "createdAt": "2026-07-12T04:28:51.630Z"
+    "createdAt": "2026-07-12T04:28:51.630Z",
+    "updatedAt": ""
   },
   {
     "id": "CAT-1783830531632-949",
@@ -41,7 +44,8 @@
     "manufacturer": "Caterpillar/Siemens",
     "description": "Heavy machinery, tools, and industrial assets.",
     "status": "Active",
-    "createdAt": "2026-07-12T04:28:51.632Z"
+    "createdAt": "2026-07-12T04:28:51.632Z",
+    "updatedAt": ""
   },
   {
     "id": "CAT-1783830531633-265",
@@ -52,7 +56,8 @@
     "manufacturer": "N/A",
     "description": "Meeting rooms, conference rooms, testing labs, and training halls.",
     "status": "Active",
-    "createdAt": "2026-07-12T04:28:51.633Z"
+    "createdAt": "2026-07-12T04:28:51.633Z",
+    "updatedAt": ""
   },
   {
     "id": "CAT-1783830531634-947",
@@ -63,6 +68,7 @@
     "manufacturer": "Epson/Logitech",
     "description": "Projectors, speakers, whiteboards, video systems.",
     "status": "Active",
-    "createdAt": "2026-07-12T04:28:51.634Z"
+    "createdAt": "2026-07-12T04:28:51.634Z",
+    "updatedAt": ""
   }
 ]

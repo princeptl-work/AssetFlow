@@ -24,14 +24,17 @@
     "history": [
       {
         "id": "HIST-SEED-0",
-        "eventType": "Created",
         "date": "2026-07-12T04:28:51.636Z",
         "user": "System Administrator",
+        "notes": "Seeded demo asset during system initialization.",
         "userId": "system",
-        "notes": "Seeded demo asset during system initialization."
+        "eventType": "Created"
       }
     ],
-    "createdAt": "2026-07-12T04:28:51.637Z"
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T04:28:51.637Z",
+    "updatedAt": ""
   },
   {
     "id": "AF-0002",
@@ -49,20 +52,26 @@
     "warrantyExpiry": "2027-08-01",
     "bookable": "No",
     "remarks": "Spare monitor pool",
+    "allocatedToUserId": "",
+    "allocatedDate": "",
+    "expectedReturnDate": "",
     "assetTag": "AF-0002",
     "qrCode": "assetflow://asset/AF-0002?sn=DELL-MON-042",
     "barcode": "AF*0002*DELL-MON-042",
     "history": [
       {
         "id": "HIST-SEED-1",
-        "eventType": "Created",
         "date": "2026-07-12T04:28:51.637Z",
         "user": "System Administrator",
+        "notes": "Seeded demo asset during system initialization.",
         "userId": "system",
-        "notes": "Seeded demo asset during system initialization."
+        "eventType": "Created"
       }
     ],
-    "createdAt": "2026-07-12T04:28:51.638Z"
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T04:28:51.638Z",
+    "updatedAt": ""
   },
   {
     "id": "AF-0003",
@@ -89,14 +98,17 @@
     "history": [
       {
         "id": "HIST-SEED-2",
-        "eventType": "Created",
         "date": "2026-07-12T04:28:51.639Z",
         "user": "System Administrator",
+        "notes": "Seeded demo asset during system initialization.",
         "userId": "system",
-        "notes": "Seeded demo asset during system initialization."
+        "eventType": "Created"
       }
     ],
-    "createdAt": "2026-07-12T04:28:51.640Z"
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T04:28:51.640Z",
+    "updatedAt": ""
   },
   {
     "id": "AF-0004",
@@ -114,20 +126,26 @@
     "warrantyExpiry": "2028-01-15",
     "bookable": "Yes",
     "remarks": "Company fleet vehicle",
+    "allocatedToUserId": "",
+    "allocatedDate": "",
+    "expectedReturnDate": "",
     "assetTag": "AF-0004",
     "qrCode": "assetflow://asset/AF-0004?sn=TESLA-M3-007",
     "barcode": "AF*0004*TESLA-M3-007",
     "history": [
       {
         "id": "HIST-SEED-3",
-        "eventType": "Created",
         "date": "2026-07-12T04:28:51.640Z",
         "user": "System Administrator",
+        "notes": "Seeded demo asset during system initialization.",
         "userId": "system",
-        "notes": "Seeded demo asset during system initialization."
+        "eventType": "Created"
       }
     ],
-    "createdAt": "2026-07-12T04:28:51.641Z"
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T04:28:51.641Z",
+    "updatedAt": ""
   },
   {
     "id": "AF-0005",
@@ -145,20 +163,26 @@
     "warrantyExpiry": "2026-05-10",
     "bookable": "Yes",
     "remarks": "4K conference projector",
+    "allocatedToUserId": "",
+    "allocatedDate": "",
+    "expectedReturnDate": "",
     "assetTag": "AF-0005",
     "qrCode": "assetflow://asset/AF-0005?sn=EPS-PROJ-003",
     "barcode": "AF*0005*EPS-PROJ-003",
     "history": [
       {
         "id": "HIST-SEED-4",
-        "eventType": "Created",
         "date": "2026-07-12T04:28:51.642Z",
         "user": "System Administrator",
+        "notes": "Seeded demo asset during system initialization.",
         "userId": "system",
-        "notes": "Seeded demo asset during system initialization."
+        "eventType": "Created"
       }
     ],
-    "createdAt": "2026-07-12T04:28:51.643Z"
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T04:28:51.643Z",
+    "updatedAt": ""
   },
   {
     "id": "AF-0006",
@@ -176,20 +200,26 @@
     "warrantyExpiry": "",
     "bookable": "Yes",
     "remarks": "12-person meeting room with video conferencing",
+    "allocatedToUserId": "",
+    "allocatedDate": "",
+    "expectedReturnDate": "",
     "assetTag": "AF-0006",
     "qrCode": "assetflow://asset/AF-0006?sn=ROOM-ALPHA-01",
     "barcode": "AF*0006*ROOM-ALPHA-01",
     "history": [
       {
         "id": "HIST-SEED-5",
-        "eventType": "Created",
         "date": "2026-07-12T04:28:51.644Z",
         "user": "System Administrator",
+        "notes": "Seeded demo asset during system initialization.",
         "userId": "system",
-        "notes": "Seeded demo asset during system initialization."
+        "eventType": "Created"
       }
     ],
-    "createdAt": "2026-07-12T04:28:51.645Z"
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T04:28:51.645Z",
+    "updatedAt": ""
   },
   {
     "id": "AF-0007",
@@ -207,20 +237,26 @@
     "warrantyExpiry": "2025-11-01",
     "bookable": "No",
     "remarks": "Paper jam issues reported",
+    "allocatedToUserId": "",
+    "allocatedDate": "",
+    "expectedReturnDate": "",
     "assetTag": "AF-0007",
     "qrCode": "assetflow://asset/AF-0007?sn=HP-LJ-992",
     "barcode": "AF*0007*HP-LJ-992",
     "history": [
       {
         "id": "HIST-SEED-6",
-        "eventType": "Created",
         "date": "2026-07-12T04:28:51.646Z",
         "user": "System Administrator",
+        "notes": "Seeded demo asset during system initialization.",
         "userId": "system",
-        "notes": "Seeded demo asset during system initialization."
+        "eventType": "Created"
       }
     ],
-    "createdAt": "2026-07-12T04:28:51.648Z"
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T04:28:51.648Z",
+    "updatedAt": ""
   },
   {
     "id": "AF-0008",
@@ -238,19 +274,25 @@
     "warrantyExpiry": "2026-02-28",
     "bookable": "No",
     "remarks": "Height-adjustable desk",
+    "allocatedToUserId": "",
+    "allocatedDate": "",
+    "expectedReturnDate": "",
     "assetTag": "AF-0008",
     "qrCode": "assetflow://asset/AF-0008?sn=SD-PRO-055",
     "barcode": "AF*0008*SD-PRO-055",
     "history": [
       {
         "id": "HIST-SEED-7",
-        "eventType": "Created",
         "date": "2026-07-12T04:28:51.648Z",
         "user": "System Administrator",
+        "notes": "Seeded demo asset during system initialization.",
         "userId": "system",
-        "notes": "Seeded demo asset during system initialization."
+        "eventType": "Created"
       }
     ],
-    "createdAt": "2026-07-12T04:28:51.649Z"
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T04:28:51.649Z",
+    "updatedAt": ""
   }
 ]
