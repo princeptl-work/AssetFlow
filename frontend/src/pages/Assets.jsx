@@ -103,7 +103,7 @@ const Assets = () => {
         fetch('/api/auth/employees', { headers })
       ]);
 
-      if (assetsRes.ok) setAssets(await assetsRes.ok ? assetsRes.json() : []);
+      if (assetsRes.ok) setAssets(await assetsRes.json());
       if (catRes.ok) setCategories(await catRes.json());
       if (deptRes.ok) setDepartments(await deptRes.json());
       if (empRes.ok) setEmployees(await empRes.json());
