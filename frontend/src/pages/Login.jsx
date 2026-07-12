@@ -126,12 +126,12 @@ const Login = () => {
           </form>
 
           {/* Admin Seed Credentials Help Box */}
-          <div 
-            style={{ 
-              marginTop: '24px', 
-              padding: '12px', 
-              borderRadius: '8px', 
-              backgroundColor: '#F8F9FA', 
+          <div
+            style={{
+              marginTop: '24px',
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: '#F8F9FA',
               border: '1px dashed var(--border-color)',
               fontSize: '11px',
               color: 'var(--text-muted)'
