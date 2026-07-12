@@ -11,6 +11,8 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [departments, setDepartments] = useState([]);
+  const [departmentId, setDepartmentId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -19,12 +21,27 @@ const Signup = () => {
     }
   }, [token, navigate]);
 
+  useEffect(() => {
+    const fetchDepts = async () => {
+      try {
+        const res = await fetch('/api/auth/departments-public');
+        if (res.ok) {
+          const data = await res.json();
+          setDepartments(data);
+        }
+      } catch (err) {
+        console.error('Failed to load departments', err);
+      }
+    };
+    fetchDepts();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !email || !password) return;
+    if (!name || !email || !password || !departmentId) return;
 
     setIsSubmitting(true);
-    const res = await signup(name, email, password, phone, '');
+    const res = await signup(name, email, password, phone, departmentId);
     setIsSubmitting(false);
 
     if (res.success) {
@@ -129,7 +146,7 @@ const Signup = () => {
               />
             </div>
 
-            <div className="form-group" style={{ marginBottom: '24px' }}>
+            <div className="form-group" style={{ marginBottom: '16px' }}>
               <label className="form-label">Phone Number</label>
               <input
                 type="tel"
@@ -138,6 +155,33 @@ const Signup = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '24px' }}>
+              <label className="form-label">Department *</label>
+              <select
+                className="form-control"
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'white',
+                  fontSize: '14px',
+                  outline: 'none',
+                  color: '#333'
+                }}
+              >
+                <option value="">Select a department</option>
+                {departments.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <button

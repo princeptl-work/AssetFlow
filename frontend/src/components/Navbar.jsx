@@ -155,12 +155,6 @@ const Navbar = ({ setIsMobileOpen, onQuickAction }) => {
       `}</style>
 
       <div className="nav-right">
-        {/* Quick Actions */}
-        <button className="quick-action-btn" onClick={onQuickAction}>
-          <Plus size={14} />
-          <span>Quick Request</span>
-        </button>
-
         {/* Current Role Badge */}
         {user && <span className={getRoleClass(user.role)}>{user.role}</span>}
 

@@ -14,6 +14,10 @@ const Login = () => {
   // Forgot Password States
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotStep, setForgotStep] = useState(1); // 1: Email, 2: OTP, 3: New Password
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
@@ -35,7 +39,7 @@ const Login = () => {
     }
   };
 
-  const handleForgotSubmit = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
     setIsResetting(true);
@@ -47,17 +51,78 @@ const Login = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(`Success: Password reset to "${data.tempPassword}". Please log in and change it.`, 'success');
-        setShowForgotModal(false);
-        setForgotEmail('');
+        console.log('DEBUG_OTP:', data.otp);
+        showToast(data.message || 'OTP has been generated and sent.', 'success');
+        setForgotStep(2);
       } else {
-        showToast(data.message || 'Reset failed.', 'error');
+        showToast(data.message || 'Failed to send OTP.', 'error');
       }
     } catch (err) {
-      showToast('Network error during reset.', 'error');
+      showToast('Network error during reset request.', 'error');
     } finally {
       setIsResetting(false);
     }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!forgotOtp) return;
+    setIsResetting(true);
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, otp: forgotOtp })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('OTP verified successfully. Please enter your new password.', 'success');
+        setForgotStep(3);
+      } else {
+        showToast(data.message || 'Incorrect OTP.', 'error');
+      }
+    } catch (err) {
+      showToast('Network error during OTP verification.', 'error');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword || !confirmPassword) return;
+    if (newPassword !== confirmPassword) {
+      showToast('Passwords do not match.', 'error');
+      return;
+    }
+    setIsResetting(true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, otp: forgotOtp, newPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Password reset successfully. You can now log in.', 'success');
+        handleCancelForgot();
+      } else {
+        showToast(data.message || 'Failed to reset password.', 'error');
+      }
+    } catch (err) {
+      showToast('Network error during password reset.', 'error');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleCancelForgot = () => {
+    setShowForgotModal(false);
+    setForgotEmail('');
+    setForgotStep(1);
+    setForgotOtp('');
+    setNewPassword('');
+    setConfirmPassword('');
   };
 
   if (loading) {
@@ -205,40 +270,135 @@ const Login = () => {
             maxWidth: '400px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
           }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#212529' }}>Forgot Password?</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
-              Enter your email address and we will reset your password to the temporary mock password: <strong>temp123</strong>.
-            </p>
-            <form onSubmit={handleForgotSubmit}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">Email Address</label>
-                <input 
-                  type="email" 
-                  className="form-control" 
-                  required 
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="you@company.com"
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <button 
-                  type="button" 
-                  className="btn btn-secondary btn-sm" 
-                  onClick={() => setShowForgotModal(false)}
-                  disabled={isResetting}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary btn-sm"
-                  disabled={isResetting}
-                >
-                  {isResetting ? 'Resetting...' : 'Reset Password'}
-                </button>
-              </div>
-            </form>
+            {forgotStep === 1 && (
+              <>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#212529' }}>Forgot Password?</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
+                  Enter your email address and we will send a 6-digit verification code (OTP) to your email ID.
+                </p>
+                <form onSubmit={handleSendOtp}>
+                  <div className="form-group" style={{ marginBottom: '16px' }}>
+                    <label className="form-label">Email Address</label>
+                    <input 
+                      type="email" 
+                      className="form-control" 
+                      required 
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="you@company.com"
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary btn-sm" 
+                      onClick={handleCancelForgot}
+                      disabled={isResetting}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary btn-sm"
+                      disabled={isResetting}
+                    >
+                      {isResetting ? 'Sending...' : 'Send OTP'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {forgotStep === 2 && (
+              <>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#212529' }}>Enter Verification OTP</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
+                  A 6-digit OTP has been sent to <strong>{forgotEmail}</strong>. Enter it below to proceed.
+                </p>
+                <form onSubmit={handleVerifyOtp}>
+                  <div className="form-group" style={{ marginBottom: '16px' }}>
+                    <label className="form-label">Verification OTP</label>
+                    <input 
+                      type="text" 
+                      maxLength="6"
+                      className="form-control" 
+                      required 
+                      value={forgotOtp}
+                      onChange={(e) => setForgotOtp(e.target.value)}
+                      placeholder="e.g. 123456"
+                      style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '18px', fontWeight: 'bold' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary btn-sm" 
+                      onClick={handleCancelForgot}
+                      disabled={isResetting}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary btn-sm"
+                      disabled={isResetting}
+                    >
+                      {isResetting ? 'Verifying...' : 'Verify OTP'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {forgotStep === 3 && (
+              <>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#212529' }}>Set New Password</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
+                  OTP verified successfully! Create a new secure password for your account.
+                </p>
+                <form onSubmit={handleResetPassword}>
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label className="form-label">New Password</label>
+                    <input 
+                      type="password" 
+                      className="form-control" 
+                      required 
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: '16px' }}>
+                    <label className="form-label">Confirm New Password</label>
+                    <input 
+                      type="password" 
+                      className="form-control" 
+                      required 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary btn-sm" 
+                      onClick={handleCancelForgot}
+                      disabled={isResetting}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary btn-sm"
+                      disabled={isResetting}
+                    >
+                      {isResetting ? 'Updating...' : 'Update Password'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}

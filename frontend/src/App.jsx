@@ -75,9 +75,6 @@ const AppLayout = () => {
       <div className={`main-content ${isCollapsed ? 'collapsed' : ''}`}>
         <Navbar 
           setIsMobileOpen={setIsMobileOpen} 
-          onQuickAction={() => {
-            window.location.href = '/dashboard';
-          }}
         />
         
         <main style={{ flex: 1 }}>

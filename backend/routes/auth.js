@@ -2,9 +2,21 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const db = require('../db');
 const { auth, checkRole, SECRET_KEY } = require('../authMiddleware');
 const { logActivity } = require('../logger');
+
+// Setup nodemailer transporter using process.env
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER || 'team.assetflow@gmail.com',
+    pass: process.env.EMAIL_PASS || ''
+  }
+});
 
 // Public departments list for signup (active only)
 router.get('/departments-public', (req, res) => {
@@ -91,7 +103,10 @@ router.post('/login', (req, res) => {
   res.json({ user: userWithoutPassword, token });
 });
 
-// Forgot Password (mock reset)
+// In-memory store for OTPs
+const otps = {};
+
+// Forgot Password — Send OTP
 router.post('/forgot-password', (req, res) => {
   const { email } = req.body;
 
@@ -104,16 +119,117 @@ router.post('/forgot-password', (req, res) => {
     return res.status(400).json({ message: 'No account found with this email address.' });
   }
 
-  const newHashedPassword = bcrypt.hashSync('temp123', 10);
-  // updatedAt set by db.update automatically
-  db.update('users', user.id, { password: newHashedPassword });
+  // Generate 6-digit OTP
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-  logActivity('system', 'System', 'Forgot Password', 'User', user.id, null, { email: user.email }, req);
+  otps[email.toLowerCase()] = { otp, expiry };
+
+  // Log to server console (Company email sending simulation)
+  console.log('\n======================================================');
+  console.log(`[COMPANY EMAIL] From: team.assetflow@gmail.com`);
+  console.log(`To: ${email.toLowerCase()}`);
+  console.log(`Subject: Password Reset OTP`);
+  console.log(`Content: Your OTP is ${otp}. Expires in 5 minutes.`);
+  console.log('======================================================\n');
+
+  // Asynchronously send the actual email using Gmail SMTP transporter
+  const senderEmail = process.env.EMAIL_USER || 'team.assetflow@gmail.com';
+  const mailOptions = {
+    from: `"AssetFlow Team" <${senderEmail}>`,
+    to: email.toLowerCase(),
+    subject: 'AssetFlow Password Reset OTP',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e8ed; border-radius: 8px;">
+        <h2 style="color: #4F46E5; text-align: center;">AssetFlow Password Reset</h2>
+        <p>Hello,</p>
+        <p>We received a request to reset your password. Use the following 6-digit One-Time Password (OTP) to proceed with resetting your password:</p>
+        <div style="text-align: center; margin: 24px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #1E293B; background-color: #F1F5F9; padding: 8px 24px; border-radius: 6px; display: inline-block;">${otp}</span>
+        </div>
+        <p style="color: #64748B; font-size: 13px;">This OTP is valid for 5 minutes and can only be used once. If you did not request this, you can safely ignore this email.</p>
+        <hr style="border: 0; border-top: 1px solid #e1e8ed; margin: 24px 0;" />
+        <p style="font-size: 12px; color: #94A3B8; text-align: center;">© 2026 AssetFlow Inc. All rights reserved.</p>
+      </div>
+    `
+  };
+
+  transporter.sendMail(mailOptions)
+    .then(info => {
+      console.log(`[EMAIL SENT] Successfully sent email to ${email.toLowerCase()}. Message ID: ${info.messageId}`);
+    })
+    .catch(err => {
+      console.error('[EMAIL ERROR] Failed to send email via nodemailer:', err.message);
+    });
 
   res.json({
-    message: 'Password has been reset to temporary credentials.',
-    tempPassword: 'temp123'
+    message: 'An OTP has been sent to your email from team.assetflow@gmail.com.',
+    from: 'team.assetflow@gmail.com',
+    otp // Send back in response for convenience in testing
   });
+});
+
+// Verify OTP — Validate OTP matches before changing password
+router.post('/verify-otp', (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ message: 'Email and OTP are required.' });
+  }
+
+  const record = otps[email.toLowerCase()];
+  if (!record) {
+    return res.status(400).json({ message: 'No active OTP request found for this email.' });
+  }
+
+  if (Date.now() > record.expiry) {
+    delete otps[email.toLowerCase()];
+    return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+  }
+
+  if (record.otp !== String(otp).trim()) {
+    return res.status(400).json({ message: 'Incorrect OTP.' });
+  }
+
+  res.json({ message: 'OTP verified successfully.' });
+});
+
+// Reset Password — Verify OTP & Save New Password
+router.post('/reset-password', (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ message: 'Email, OTP and new password are required.' });
+  }
+
+  const record = otps[email.toLowerCase()];
+  if (!record) {
+    return res.status(400).json({ message: 'No active OTP request found for this email.' });
+  }
+
+  if (Date.now() > record.expiry) {
+    delete otps[email.toLowerCase()];
+    return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+  }
+
+  if (record.otp !== String(otp).trim()) {
+    return res.status(400).json({ message: 'Incorrect OTP.' });
+  }
+
+  const user = db.findOne('users', { email: email.toLowerCase() });
+  if (!user) {
+    return res.status(404).json({ message: 'User not found.' });
+  }
+
+  const hashedPassword = bcrypt.hashSync(newPassword, 10);
+  db.update('users', user.id, { password: hashedPassword });
+
+  // Clear OTP
+  delete otps[email.toLowerCase()];
+
+  logActivity(user.id, user.name, 'Reset Password', 'User', user.id, null, { email: user.email }, req);
+
+  res.json({ message: 'Password has been changed successfully.' });
 });
 
 // Get current profile

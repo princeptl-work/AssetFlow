@@ -647,8 +647,8 @@ function seedDatabase() {
   if (users.length === 0) {
     const hashedPassword = bcrypt.hashSync('admin123', 10);
     const adminUser = db.create('users', {
-      employeeId: 'AF-EMP-001',
-      name: 'System Administrator',
+      employeeId: 'EMP-001',
+      name: 'Admin',
       email: 'admin@assetflow.com',
       password: hashedPassword,
       phone: '+1 (555) 019-2834',
