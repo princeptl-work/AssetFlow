@@ -32,6 +32,7 @@ router.get('/', auth, (req, res) => {
     const requester = users.find(u => u.id === r.userId);
     const category = categories.find(c => c.id === r.categoryId);
     const asset = r.allocatedAssetId ? assets.find(a => a.id === r.allocatedAssetId) : null;
+    const requestedAsset = r.assetId ? assets.find(a => a.id === r.assetId) : null;
 
     return {
       ...r,
@@ -40,7 +41,9 @@ router.get('/', auth, (req, res) => {
       requesterDepartmentId: requester ? requester.departmentId : 'N/A',
       categoryName: category ? category.name : 'Unknown Category',
       assetName: asset ? asset.name : 'N/A',
-      assetTag: asset ? asset.assetTag : 'N/A'
+      assetTag: asset ? asset.assetTag : 'N/A',
+      requestedAssetName: requestedAsset ? requestedAsset.name : 'N/A',
+      requestedAssetTag: requestedAsset ? requestedAsset.assetTag : 'N/A'
     };
   });
 
@@ -55,24 +58,29 @@ router.get('/', auth, (req, res) => {
 // Any authenticated user can submit a request
 // ==========================================
 router.post('/', auth, (req, res) => {
-  const { categoryId, reason } = req.body;
+  const { assetId, reason } = req.body;
 
   if (req.user.role === 'Admin') {
     return res.status(403).json({ message: 'Administrators cannot submit asset requests.' });
   }
 
-  if (!categoryId || !reason) {
-    return res.status(400).json({ message: 'Category and reason are required.' });
+  if (!assetId || !reason) {
+    return res.status(400).json({ message: 'Asset ID and reason are required.' });
   }
 
-  const category = db.findById('categories', categoryId);
-  if (!category) {
-    return res.status(404).json({ message: 'Requested asset category not found.' });
+  const asset = db.findById('assets', assetId);
+  if (!asset) {
+    return res.status(404).json({ message: 'Asset not found.' });
+  }
+
+  if (asset.status !== 'Available' && asset.status !== 'Reserved') {
+    return res.status(400).json({ message: 'Asset is not available or reserved for request.' });
   }
 
   const newRequest = db.create('requests', {
     userId: req.user.id,
-    categoryId,
+    categoryId: asset.categoryId,
+    assetId: asset.id,
     reason,
     status: 'Pending',
     allocatedAssetId: '',
@@ -143,7 +151,7 @@ router.put('/:id', auth, checkRole(['Asset Manager', 'Department Head']), (req, 
       return res.status(404).json({ message: 'Selected asset not found.' });
     }
 
-    if (asset.status !== 'Available') {
+    if (asset.status !== 'Available' && asset.status !== 'Reserved') {
       return res.status(400).json({ message: `Cannot allocate this asset. It is currently in "${asset.status}" status.` });
     }
 

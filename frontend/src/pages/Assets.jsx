@@ -67,6 +67,29 @@ const SVGQRCode = ({ value }) => {
   );
 };
 
+const getAssetImage = (asset) => {
+  if (!asset) return '';
+  if (asset.photo && asset.photo !== '') return asset.photo;
+
+  const name = (asset.name || '').toLowerCase();
+  const cat = (asset.category?.name || asset.categoryName || '').toLowerCase();
+
+  if (name.includes('monitor') || name.includes('screen') || name.includes('dell')) {
+    return 'http://localhost:5000/images/dell-moniter.jpg';
+  }
+  if (name.includes('printer') || name.includes('hp') || name.includes('epson')) {
+    return 'http://localhost:5000/images/hp-printer.jpg';
+  }
+  if (name.includes('macbook') || name.includes('laptop') || name.includes('computer') || name.includes('thinkpad')) {
+    return 'http://localhost:5000/images/laptop.jpg';
+  }
+  if (name.includes('projector') || cat.includes('equipment') || cat.includes('rooms')) {
+    return 'http://localhost:5000/images/projector.webp';
+  }
+  
+  return 'http://localhost:5000/images/laptop.jpg';
+};
+
 const Assets = () => {
   const { token, user, showToast } = useAuth();
   
@@ -563,10 +586,19 @@ const Assets = () => {
               </div>
             )}
 
-            {/* Simulated Barcodes & QR */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', justifyContent: 'center' }}>
-              <SVGBarcode value={assetDetails.assetTag} />
-              <SVGQRCode value={assetDetails.assetTag} />
+            {/* Simulated Barcodes & QR & Image */}
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <SVGBarcode value={assetDetails.assetTag} />
+                <SVGQRCode value={assetDetails.assetTag} />
+              </div>
+              <div style={{ width: '120px', height: '120px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img 
+                  src={getAssetImage(assetDetails)} 
+                  alt={assetDetails.name} 
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                />
+              </div>
             </div>
 
             {/* Current allocation block */}

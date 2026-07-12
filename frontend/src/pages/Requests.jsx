@@ -24,9 +24,11 @@ const Requests = () => {
 
   // Form Field States
   const [newCategoryId, setNewCategoryId] = useState('');
+  const [newAssetId, setNewAssetId] = useState('');
   const [newReason, setNewReason] = useState('');
 
   // Approval/Rejection Form States
+  const [allAssets, setAllAssets] = useState([]);
   const [availableAssets, setAvailableAssets] = useState([]);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [remarks, setRemarks] = useState('');
@@ -36,22 +38,19 @@ const Requests = () => {
     if (!token) return;
     setLoading(true);
     try {
-      // Fetch Requests
-      const reqRes = await fetch('/api/requests', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (reqRes.ok) {
-        setRequests(await reqRes.json());
-      }
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const [reqRes, catRes, assetRes] = await Promise.all([
+        fetch('/api/requests', { headers }),
+        fetch('/api/organization/categories', { headers }),
+        fetch('/api/assets', { headers })
+      ]);
 
-      // Fetch Categories
-      const catRes = await fetch('/api/organization/categories', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      if (reqRes.ok) setRequests(await reqRes.json());
       if (catRes.ok) {
         const catData = await catRes.json();
         setCategories(catData.filter(c => c.status === 'Active'));
       }
+      if (assetRes.ok) setAllAssets(await assetRes.json());
     } catch (err) {
       console.error(err);
       showToast('Failed to load request data.', 'error');
@@ -81,7 +80,7 @@ const Requests = () => {
 
   const handleOpenApprove = (reqItem) => {
     setSelectedRequest(reqItem);
-    setSelectedAssetId('');
+    setSelectedAssetId(reqItem.assetId || '');
     setRemarks('');
     fetchAvailableAssetsForCategory(reqItem.categoryId);
     setShowApproveModal(true);
@@ -95,7 +94,7 @@ const Requests = () => {
 
   const handleCreateRequestSubmit = async (e) => {
     e.preventDefault();
-    if (!newCategoryId || !newReason) {
+    if (!newAssetId || !newReason) {
       showToast('Please fill in all fields.', 'error');
       return;
     }
@@ -108,13 +107,13 @@ const Requests = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ categoryId: newCategoryId, reason: newReason })
+        body: JSON.stringify({ assetId: newAssetId, reason: newReason })
       });
       const data = await res.json();
       if (res.ok) {
         showToast('Asset request submitted successfully.', 'success');
         setShowRequestModal(false);
-        setNewCategoryId('');
+        setNewAssetId('');
         setNewReason('');
         fetchData();
       } else {
@@ -313,7 +312,7 @@ const Requests = () => {
               <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid var(--border-color)', color: '#64748B', fontWeight: '600' }}>
                 <th style={{ padding: '14px 16px' }}>Request ID</th>
                 {user?.role !== 'Employee' && <th style={{ padding: '14px 16px' }}>Employee</th>}
-                <th style={{ padding: '14px 16px' }}>Asset Category</th>
+                <th style={{ padding: '14px 16px' }}>Requested Asset</th>
                 <th style={{ padding: '14px 16px' }}>Reason</th>
                 <th style={{ padding: '14px 16px' }}>Status</th>
                 <th style={{ padding: '14px 16px' }}>Allocated Asset</th>
@@ -334,7 +333,14 @@ const Requests = () => {
                     </td>
                   )}
                   <td style={{ padding: '14px 16px', fontWeight: '500', color: '#1E293B' }}>
-                    {r.categoryName}
+                    {r.requestedAssetName && r.requestedAssetName !== 'N/A' ? (
+                      <div>
+                        <span>{r.requestedAssetName}</span>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Tag: {r.requestedAssetTag}</div>
+                      </div>
+                    ) : (
+                      <span>{r.categoryName}</span>
+                    )}
                   </td>
                   <td style={{ padding: '14px 16px', color: '#475569', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.reason}>
                     {r.reason}
@@ -397,18 +403,23 @@ const Requests = () => {
             <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#1E293B' }}>Request New Asset</h3>
             <form onSubmit={handleCreateRequestSubmit}>
               <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">Asset Category *</label>
+                <label className="form-label">Select Available/Reserved Asset *</label>
                 <select
                   className="form-control"
                   required
-                  value={newCategoryId}
-                  onChange={(e) => setNewCategoryId(e.target.value)}
+                  value={newAssetId}
+                  onChange={(e) => setNewAssetId(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)' }}
                 >
-                  <option value="">Select Category</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
+                  <option value="">Select Asset</option>
+                  {allAssets
+                    .filter(a => a.status === 'Available' || a.status === 'Reserved')
+                    .map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} ({a.assetTag}) - {a.status}
+                      </option>
+                    ))
+                  }
                 </select>
               </div>
 

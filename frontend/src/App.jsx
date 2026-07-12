@@ -82,10 +82,10 @@ const AppLayout = () => {
           <Routes>
             <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
             <Route path="/assets" element={<ProtectedRoute element={<Assets />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
-            <Route path="/requests" element={<ProtectedRoute element={<Requests />} allowedRoles={['Asset Manager', 'Department Head', 'Employee']} />} />
-            <Route path="/bookings" element={<ProtectedRoute element={<Bookings />} allowedRoles={['Asset Manager', 'Department Head', 'Employee']} />} />
-            <Route path="/maintenance" element={<ProtectedRoute element={<Maintenance />} allowedRoles={['Asset Manager', 'Department Head', 'Employee']} />} />
-            <Route path="/transfers" element={<ProtectedRoute element={<Transfers />} allowedRoles={['Asset Manager', 'Department Head', 'Employee']} />} />
+            <Route path="/requests" element={<ProtectedRoute element={<Requests />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
+            <Route path="/bookings" element={<ProtectedRoute element={<Bookings />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
+            <Route path="/maintenance" element={<ProtectedRoute element={<Maintenance />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
+            <Route path="/transfers" element={<ProtectedRoute element={<Transfers />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
             
             <Route path="/audits" element={<ProtectedRoute element={<Audits />} allowedRoles={['Admin', 'Asset Manager', 'Department Head', 'Employee']} />} />
             <Route path="/reports" element={<ProtectedRoute element={<Reports />} allowedRoles={['Admin', 'Asset Manager', 'Department Head']} />} />

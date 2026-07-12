@@ -38,7 +38,7 @@ const TABLE_COLUMNS = {
   notifications: ['id', 'userId', 'message', 'type', 'link', 'isRead', 'timestamp'],
   logs: ['id', 'userId', 'userName', 'action', 'entity', 'entityId', 'previousValue', 'newValue', 'ip', 'timestamp'],
   transfers: ['id', 'assetId', 'requestedByUserId', 'targetUserId', 'targetDepartmentId', 'status', 'deptHeadApproverId', 'assetManagerApproverId', 'notes', 'requestDate', 'deptHeadApprovalDate', 'assetManagerApprovalDate', 'createdAt', 'updatedAt'],
-  requests: ['id', 'userId', 'categoryId', 'reason', 'status', 'allocatedAssetId', 'remarks', 'createdAt', 'updatedAt']
+  requests: ['id', 'userId', 'categoryId', 'assetId', 'reason', 'status', 'allocatedAssetId', 'remarks', 'createdAt', 'updatedAt']
 };
 
 const TABLE_SCHEMAS = {
@@ -213,6 +213,7 @@ const TABLE_SCHEMAS = {
       "id" VARCHAR(255) PRIMARY KEY,
       "userId" VARCHAR(255),
       "categoryId" VARCHAR(255),
+      "assetId" VARCHAR(255),
       "reason" TEXT,
       "status" VARCHAR(255),
       "allocatedAssetId" VARCHAR(255),

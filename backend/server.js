@@ -57,6 +57,8 @@ app.use('/api/logs', logsRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/requests', requestsRouter);
 
+app.use('/images', express.static(path.join(__dirname, '../images/images')));
+
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.json({
