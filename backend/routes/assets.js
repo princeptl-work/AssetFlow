@@ -489,4 +489,6 @@ router.post('/bulk-delete', auth, checkRole(['Admin']), (req, res) => {
   res.json({ message: `Successfully deleted ${deletedCount} assets.` });
 });
 
+router.isValidTransition = isValidTransition;
 module.exports = router;
+

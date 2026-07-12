@@ -1,6 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const { MongoClient } = require('mongodb');
+
+// Load environment variables
+require('dotenv').config();
 
 const DATA_DIR = path.join(__dirname, 'data');
 
@@ -14,21 +18,78 @@ const COLLECTIONS = [
   'departments',
   'categories',
   'assets',
-  'transfers',
   'bookings',
   'maintenance',
   'audits',
   'notifications',
-  'logs'
+  'logs',
+  'transfers'
 ];
 
-// Initialize collections
+// Initialize empty local files if they don't exist
 COLLECTIONS.forEach(col => {
   const filePath = path.join(DATA_DIR, `${col}.json`);
   if (!fs.existsSync(filePath)) {
     fs.writeFileSync(filePath, JSON.stringify([], null, 2));
   }
 });
+
+// MongoDB Connection State
+let mongoClient = null;
+let mongoDb = null;
+let mongoConnected = false;
+
+// Connect to MongoDB if MONGO_URI is set
+if (process.env.MONGO_URI) {
+  console.log(`Attempting to connect to MongoDB: ${process.env.MONGO_URI.split('@').pop()}`);
+  MongoClient.connect(process.env.MONGO_URI)
+    .then(client => {
+      mongoClient = client;
+      mongoDb = client.db();
+      mongoConnected = true;
+      console.log('==================================================');
+      console.log('  SUCCESS: Connected to MongoDB database!');
+      console.log('  Mirroring data collections in real-time.');
+      console.log('==================================================');
+      
+      // Pull data from MongoDB on startup to restore local state
+      syncFromMongo();
+    })
+    .catch(err => {
+      console.error('==================================================');
+      console.error('  ERROR: Failed to connect to MongoDB.');
+      console.error('  Falling back to local JSON database.');
+      console.error(err.message);
+      console.error('==================================================');
+    });
+}
+
+// Pull collections from MongoDB to JSON files
+async function syncFromMongo() {
+  for (const col of COLLECTIONS) {
+    try {
+      const collection = mongoDb.collection(col);
+      const data = await collection.find({}).toArray();
+      
+      // Strip MongoDB internal object IDs before caching locally
+      const cleanData = data.map(({ _id, ...rest }) => rest);
+      
+      if (cleanData.length > 0) {
+        fs.writeFileSync(path.join(DATA_DIR, `${col}.json`), JSON.stringify(cleanData, null, 2));
+        console.log(`Sync: Loaded ${cleanData.length} records for collection "${col}" from MongoDB.`);
+      } else {
+        // If MongoDB is empty, seed it with the current local database state
+        const localData = JSON.parse(fs.readFileSync(path.join(DATA_DIR, `${col}.json`), 'utf8'));
+        if (localData.length > 0) {
+          await collection.insertMany(localData);
+          console.log(`Sync: Seeded MongoDB collection "${col}" with ${localData.length} local records.`);
+        }
+      }
+    } catch (err) {
+      console.error(`Sync Error for collection "${col}":`, err);
+    }
+  }
+}
 
 // Database client
 const db = {
@@ -49,6 +110,20 @@ const db = {
     const filePath = path.join(DATA_DIR, `${collection}.json`);
     try {
       fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      
+      // Mirror writes to MongoDB asynchronously in the background
+      if (mongoConnected && mongoDb) {
+        const col = mongoDb.collection(collection);
+        col.deleteMany({})
+          .then(() => {
+            if (data.length > 0) {
+              return col.insertMany(data);
+            }
+          })
+          .catch(err => {
+            console.error(`Failed to mirror write for "${collection}" to MongoDB:`, err);
+          });
+      }
       return true;
     } catch (err) {
       console.error(`Error writing collection ${collection}:`, err);
@@ -146,7 +221,6 @@ const db = {
 
 // Seed baseline data if empty
 function seedDatabase() {
-  // 1. Seed Departments
   const departments = db.read('departments');
   let deptIt, deptOps;
   if (departments.length === 0) {
@@ -183,7 +257,6 @@ function seedDatabase() {
     deptOps = departments.find(d => d.name === 'Operations Department');
   }
 
-  // 2. Seed Admin User
   const users = db.read('users');
   if (users.length === 0) {
     const hashedPassword = bcrypt.hashSync('admin123', 10);
@@ -200,7 +273,6 @@ function seedDatabase() {
       joiningDate: '2026-01-01'
     });
 
-    // Also seed a default Asset Manager
     const managerPassword = bcrypt.hashSync('manager123', 10);
     const assetManager = db.create('users', {
       employeeId: 'AF-EMP-002',
@@ -215,7 +287,6 @@ function seedDatabase() {
       joiningDate: '2026-02-15'
     });
 
-    // Seed a Department Head
     const headPassword = bcrypt.hashSync('head123', 10);
     const deptHead = db.create('users', {
       employeeId: 'AF-EMP-003',
@@ -230,12 +301,10 @@ function seedDatabase() {
       joiningDate: '2026-03-01'
     });
 
-    // Update Operations Department managerId to point to John Doe
     if (deptOps && deptHead) {
       db.update('departments', deptOps.id, { managerId: deptHead.id });
     }
 
-    // Seed a standard Employee
     const employeePassword = bcrypt.hashSync('employee123', 10);
     db.create('users', {
       employeeId: 'AF-EMP-004',
@@ -251,14 +320,13 @@ function seedDatabase() {
     });
   }
 
-  // 3. Seed Categories
   const categories = db.read('categories');
   if (categories.length === 0) {
     db.create('categories', {
       name: 'Electronics',
-      warrantyPeriod: 24, // months
-      expectedLife: 4, // years
-      color: '#4F46E5', // indigo
+      warrantyPeriod: 24,
+      expectedLife: 4,
+      color: '#4F46E5',
       manufacturer: 'Apple/Dell/HP',
       description: 'Laptops, desktops, monitors, keyboards, mice, and other peripherals.',
       status: 'Active'
@@ -267,7 +335,7 @@ function seedDatabase() {
       name: 'Furniture',
       warrantyPeriod: 12,
       expectedLife: 10,
-      color: '#D97706', // amber
+      color: '#D97706',
       manufacturer: 'Herman Miller/Ikea',
       description: 'Office chairs, standing desks, conference tables, cabinets.',
       status: 'Active'
@@ -276,7 +344,7 @@ function seedDatabase() {
       name: 'Vehicles',
       warrantyPeriod: 36,
       expectedLife: 8,
-      color: '#059669', // emerald
+      color: '#059669',
       manufacturer: 'Tesla/Toyota',
       description: 'Company cars, vans, shuttle buses.',
       status: 'Active'
@@ -285,7 +353,7 @@ function seedDatabase() {
       name: 'Machinery',
       warrantyPeriod: 12,
       expectedLife: 12,
-      color: '#DC2626', // red
+      color: '#DC2626',
       manufacturer: 'Caterpillar/Siemens',
       description: 'Heavy machinery, tools, and industrial assets.',
       status: 'Active'
@@ -294,7 +362,7 @@ function seedDatabase() {
       name: 'Rooms',
       warrantyPeriod: 0,
       expectedLife: 50,
-      color: '#7C3AED', // violet
+      color: '#7C3AED',
       manufacturer: 'N/A',
       description: 'Meeting rooms, conference rooms, testing labs, and training halls.',
       status: 'Active'
@@ -303,188 +371,10 @@ function seedDatabase() {
       name: 'Equipment',
       warrantyPeriod: 12,
       expectedLife: 5,
-      color: '#2563EB', // blue
+      color: '#2563EB',
       manufacturer: 'Epson/Logitech',
       description: 'Projectors, speakers, whiteboards, video systems.',
       status: 'Active'
-    });
-  }
-
-  // 4. Seed Sample Assets for demo dashboard
-  const assets = db.read('assets');
-  if (assets.length === 0) {
-    const cats = db.read('categories');
-    const catElectronics = cats.find(c => c.name === 'Electronics');
-    const catFurniture = cats.find(c => c.name === 'Furniture');
-    const catVehicles = cats.find(c => c.name === 'Vehicles');
-    const catEquipment = cats.find(c => c.name === 'Equipment');
-    const catRooms = cats.find(c => c.name === 'Rooms');
-
-    const usersList = db.read('users');
-    const employee = usersList.find(u => u.email === 'employee@assetflow.com');
-    const manager = usersList.find(u => u.email === 'manager@assetflow.com');
-
-    const sampleAssets = [
-      {
-        name: 'MacBook Pro 16"',
-        categoryId: catElectronics ? catElectronics.id : '',
-        serialNumber: 'MBP-2026-001',
-        modelNumber: 'M3 Max',
-        manufacturer: 'Apple',
-        acquisitionDate: '2025-06-15',
-        acquisitionCost: 3499,
-        location: 'HQ - Floor 3',
-        departmentId: deptIt ? deptIt.id : '',
-        condition: 'Excellent',
-        status: 'Allocated',
-        warrantyExpiry: '2027-06-15',
-        bookable: 'No',
-        remarks: 'Primary developer workstation',
-        allocatedToUserId: employee ? employee.id : '',
-        allocatedDate: '2026-01-10',
-        expectedReturnDate: '2026-12-31'
-      },
-      {
-        name: 'Dell UltraSharp Monitor 27"',
-        categoryId: catElectronics ? catElectronics.id : '',
-        serialNumber: 'DELL-MON-042',
-        modelNumber: 'U2723QE',
-        manufacturer: 'Dell',
-        acquisitionDate: '2025-08-01',
-        acquisitionCost: 649,
-        location: 'HQ - Floor 3',
-        departmentId: deptIt ? deptIt.id : '',
-        condition: 'Good',
-        status: 'Available',
-        warrantyExpiry: '2027-08-01',
-        bookable: 'No',
-        remarks: 'Spare monitor pool'
-      },
-      {
-        name: 'Herman Miller Aeron Chair',
-        categoryId: catFurniture ? catFurniture.id : '',
-        serialNumber: 'HM-AERON-118',
-        modelNumber: 'Size B',
-        manufacturer: 'Herman Miller',
-        acquisitionDate: '2024-03-20',
-        acquisitionCost: 1395,
-        location: 'HQ - Floor 2',
-        departmentId: deptOps ? deptOps.id : '',
-        condition: 'Good',
-        status: 'Allocated',
-        warrantyExpiry: '2025-03-20',
-        bookable: 'No',
-        remarks: 'Ergonomic seating',
-        allocatedToUserId: employee ? employee.id : '',
-        allocatedDate: '2025-04-01',
-        expectedReturnDate: '2026-07-01'
-      },
-      {
-        name: 'Tesla Model 3 Fleet Car',
-        categoryId: catVehicles ? catVehicles.id : '',
-        serialNumber: 'TESLA-M3-007',
-        modelNumber: 'Long Range',
-        manufacturer: 'Tesla',
-        acquisitionDate: '2025-01-15',
-        acquisitionCost: 48000,
-        location: 'Parking Lot A',
-        departmentId: deptOps ? deptOps.id : '',
-        condition: 'Excellent',
-        status: 'Available',
-        warrantyExpiry: '2028-01-15',
-        bookable: 'Yes',
-        remarks: 'Company fleet vehicle'
-      },
-      {
-        name: 'Epson Projector Pro',
-        categoryId: catEquipment ? catEquipment.id : '',
-        serialNumber: 'EPS-PROJ-003',
-        modelNumber: 'PowerLite L610U',
-        manufacturer: 'Epson',
-        acquisitionDate: '2025-05-10',
-        acquisitionCost: 2200,
-        location: 'Conference Room B',
-        departmentId: deptIt ? deptIt.id : '',
-        condition: 'Good',
-        status: 'Available',
-        warrantyExpiry: '2026-05-10',
-        bookable: 'Yes',
-        remarks: '4K conference projector'
-      },
-      {
-        name: 'Conference Room Alpha',
-        categoryId: catRooms ? catRooms.id : '',
-        serialNumber: 'ROOM-ALPHA-01',
-        modelNumber: 'N/A',
-        manufacturer: 'N/A',
-        acquisitionDate: '2020-01-01',
-        acquisitionCost: 0,
-        location: 'HQ - Floor 1',
-        departmentId: deptOps ? deptOps.id : '',
-        condition: 'Good',
-        status: 'Available',
-        warrantyExpiry: '',
-        bookable: 'Yes',
-        remarks: '12-person meeting room with video conferencing'
-      },
-      {
-        name: 'HP LaserJet Enterprise',
-        categoryId: catElectronics ? catElectronics.id : '',
-        serialNumber: 'HP-LJ-992',
-        modelNumber: 'M607dn',
-        manufacturer: 'HP',
-        acquisitionDate: '2024-11-01',
-        acquisitionCost: 899,
-        location: 'HQ - Floor 2',
-        departmentId: deptOps ? deptOps.id : '',
-        condition: 'Fair',
-        status: 'Under Maintenance',
-        warrantyExpiry: '2025-11-01',
-        bookable: 'No',
-        remarks: 'Paper jam issues reported'
-      },
-      {
-        name: 'Standing Desk Pro',
-        categoryId: catFurniture ? catFurniture.id : '',
-        serialNumber: 'SD-PRO-055',
-        modelNumber: 'Electric Dual Motor',
-        manufacturer: 'FlexiSpot',
-        acquisitionDate: '2025-02-28',
-        acquisitionCost: 599,
-        location: 'HQ - Floor 3',
-        departmentId: deptIt ? deptIt.id : '',
-        condition: 'Excellent',
-        status: 'Available',
-        warrantyExpiry: '2026-02-28',
-        bookable: 'No',
-        remarks: 'Height-adjustable desk'
-      }
-    ];
-
-    sampleAssets.forEach((assetData, idx) => {
-      const tagCount = idx + 1;
-      const assetTag = `AF-${String(tagCount).padStart(4, '0')}`;
-      const codes = {
-        qrCode: `assetflow://asset/${assetTag}?sn=${assetData.serialNumber || ''}`,
-        barcode: `AF*${assetTag.replace('AF-', '')}*${assetData.serialNumber || '0'}`
-      };
-
-      db.create('assets', {
-        ...assetData,
-        assetTag,
-        qrCode: codes.qrCode,
-        barcode: codes.barcode,
-        history: [
-          {
-            id: `HIST-SEED-${idx}`,
-            eventType: 'Created',
-            date: new Date().toISOString(),
-            user: 'System Administrator',
-            userId: 'system',
-            notes: 'Seeded demo asset during system initialization.'
-          }
-        ]
-      });
     });
   }
 }

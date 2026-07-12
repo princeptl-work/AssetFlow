@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -9,8 +9,7 @@ import {
   ArrowLeftRight, 
   ClipboardCheck, 
   Building2, 
-  History,
-  BarChart3,
+  History, 
   LogOut,
   ChevronLeft,
   ChevronRight
@@ -27,32 +26,49 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
     { name: 'Maintenance', path: '/maintenance', icon: Wrench, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
     { name: 'Asset Transfers', path: '/transfers', icon: ArrowLeftRight, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
     { name: 'Audit Cycles', path: '/audits', icon: ClipboardCheck, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Reports & Analytics', path: '/reports', icon: BarChart3, roles: ['Admin', 'Asset Manager'] },
     { name: 'Organization Setup', path: '/organization', icon: Building2, roles: ['Admin'] },
     { name: 'Activity Logs', path: '/logs', icon: History, roles: ['Admin'] }
   ];
 
   const filteredItems = menuItems.filter(item => user && item.roles.includes(user.role));
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
+  // Initials for avatar
+  const getInitials = (name) => {
+    if (!name) return 'EP';
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
   };
 
   return (
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}>
+      {/* Sidebar Header */}
       <div className="sidebar-header">
         <Link to="/dashboard" className="logo-container" style={{ textDecoration: 'none' }}>
           <div className="logo-icon">AF</div>
-          <span className="logo-text" style={{ color: 'white' }}>AssetFlow</span>
+          {!isCollapsed && (
+            <div>
+              <div style={{ fontWeight: '700', fontSize: '15px', color: '#212529', lineHeight: '1.2' }}>AssetFlow</div>
+              <div className="logo-subtext">ERP Suite</div>
+            </div>
+          )}
         </Link>
-        <button className="collapse-btn" onClick={toggleCollapse}>
-          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        <button 
+          className="collapse-btn" 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          style={{ padding: '4px', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+        >
+          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
 
+      {/* Navigation Menu */}
       <ul className="sidebar-menu">
         {filteredItems.map((item) => {
-          const IconComponent = item.icon;
+          const Icon = item.icon;
           const isActive = location.pathname.startsWith(item.path);
 
           return (
@@ -62,31 +78,35 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
                 className={`menu-link ${isActive ? 'active' : ''}`}
                 onClick={() => setIsMobileOpen(false)}
               >
-                <IconComponent size={20} />
-                <span>{item.name}</span>
+                <Icon size={18} />
+                {!isCollapsed && <span>{item.name}</span>}
               </Link>
             </li>
           );
         })}
       </ul>
 
-      <div style={{ padding: '16px 8px', borderTop: '1px solid #3F474F' }}>
-        <button 
-          onClick={logout} 
-          className="menu-link" 
-          style={{ 
-            width: '100%', 
-            background: 'none', 
-            border: 'none', 
-            cursor: 'pointer',
-            textAlign: 'left',
-            color: '#FF8A80'
-          }}
-        >
-          <LogOut size={20} />
-          <span>Logout</span>
-        </button>
-      </div>
+      {/* Sidebar Footer User Widget (Screenshot 2) */}
+      {user && (
+        <div className="sidebar-footer">
+          <div className="sidebar-profile">
+            <div className="sidebar-avatar">
+              {getInitials(user.name)}
+            </div>
+            {!isCollapsed && (
+              <div className="sidebar-profile-info">
+                <span className="sidebar-username">{user.name}</span>
+                <span className="sidebar-role">{user.role}</span>
+              </div>
+            )}
+          </div>
+          {!isCollapsed && (
+            <button className="logout-btn" onClick={logout} title="Log Out">
+              <LogOut size={16} />
+            </button>
+          )}
+        </div>
+      )}
     </aside>
   );
 };

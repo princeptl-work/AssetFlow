@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { ShieldCheck, CalendarClock, PieChart } from 'lucide-react';
 
 const Signup = () => {
   const { signup, token, loading } = useAuth();
@@ -10,8 +11,6 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [departmentId, setDepartmentId] = useState('');
-  const [departments, setDepartments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -20,19 +19,12 @@ const Signup = () => {
     }
   }, [token, navigate]);
 
-  useEffect(() => {
-    fetch('/api/auth/departments-public')
-      .then(res => res.ok ? res.json() : [])
-      .then(data => setDepartments(data))
-      .catch(() => setDepartments([]));
-  }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !email || !password) return;
 
     setIsSubmitting(true);
-    const res = await signup(name, email, password, phone, departmentId);
+    const res = await signup(name, email, password, phone, '');
     setIsSubmitting(false);
 
     if (res.success) {
@@ -42,54 +34,89 @@ const Signup = () => {
 
   if (loading) {
     return (
-      <div className="auth-page">
-        <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Loading...</div>
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8F9FA' }}>
+        <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Connecting to AssetFlow...</div>
       </div>
     );
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card" style={{ maxWidth: '480px' }}>
-        <div className="auth-logo">
-          <div className="logo-icon" style={{ width: '48px', height: '48px', fontSize: '24px', borderRadius: '8px' }}>AF</div>
+    <div className="auth-split-container">
+      {/* Left Pane - Odoo Purple Brand Panel */}
+      <div className="auth-sidebar-pane">
+        <div className="auth-logo-row">
+          <div className="auth-logo-box">AF</div>
+          <span>AssetFlow</span>
         </div>
 
-        <div className="auth-header">
-          <h2 style={{ fontSize: '24px', margin: 0 }}>Register Profile</h2>
-          <p className="auth-subtitle">Create a new Employee account</p>
+        <div style={{ margin: 'auto 0' }}>
+          <h1 style={{ color: 'white', fontSize: '38px', lineHeight: '1.2', fontWeight: '700', marginBottom: '20px' }}>
+            Enterprise asset lifecycle, simplified.
+          </h1>
+          <p style={{ fontSize: '16px', opacity: '0.85', lineHeight: '1.5', marginBottom: '30px' }}>
+            Manage assets, allocations, bookings, maintenance, and audits across your organization — with role-based workflows built for modern teams.
+          </p>
+
+          <ul className="auth-bullets">
+            <li style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px', marginBottom: '16px' }}>
+              <ShieldCheck size={18} style={{ color: 'var(--accent)' }} />
+              <span>Full asset lifecycle & audit trail</span>
+            </li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px', marginBottom: '16px' }}>
+              <CalendarClock size={18} style={{ color: 'var(--accent)' }} />
+              <span>Conflict-aware allocations and bookings</span>
+            </li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '15px' }}>
+              <PieChart size={18} style={{ color: 'var(--accent)' }} />
+              <span>Role-based approvals and analytics</span>
+            </li>
+          </ul>
         </div>
 
-        <div className="alert-box alert-box-info" style={{ marginBottom: '20px' }}>
-          <strong>Signup Rule:</strong> All new profiles are registered under the default <strong>Employee</strong> role. Higher roles (Admin, Manager, Dept Head) must be promoted manually by an existing Administrator.
+        <div style={{ fontSize: '11px', opacity: 0.6 }}>
+          © 2026 AssetFlow ERP Suite.
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Full Name</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="e.g. Alexander Wright"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+      {/* Right Pane - Form Card */}
+      <div className="auth-main-pane">
+        <div className="auth-panel-card" style={{ maxWidth: '440px' }}>
+          <h2 style={{ fontSize: '26px', fontWeight: '700', marginBottom: '6px', color: '#212529' }}>Welcome</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '20px' }}>
+            Create an employee account.
+          </p>
+
+          {/* Switcher Tabs */}
+          <div className="auth-tabs">
+            <div className="auth-tab" onClick={() => navigate('/login')}>Log in</div>
+            <div className="auth-tab active">Sign up</div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
-            <input
-              type="email"
-              className="form-control"
-              placeholder="name@organization.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Full Name</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="e.g. John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
 
-          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                className="form-control"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
             <div className="form-group">
               <label className="form-label">Password</label>
               <input
@@ -102,7 +129,7 @@ const Signup = () => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: '24px' }}>
               <label className="form-label">Phone Number</label>
               <input
                 type="tel"
@@ -112,39 +139,31 @@ const Signup = () => {
                 onChange={(e) => setPhone(e.target.value)}
               />
             </div>
-          </div>
 
-          {departments.length > 0 && (
-            <div className="form-group">
-              <label className="form-label">Department (Optional)</label>
-              <select
-                className="form-control"
-                value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
-              >
-                <option value="">Assign later by Admin</option>
-                {departments.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '12px', fontSize: '15px', borderRadius: '8px' }}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Registering profile...' : 'Sign up'}
+            </button>
+          </form>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', padding: '10px', fontSize: '15px', marginTop: '12px' }}
-            disabled={isSubmitting}
+          <div 
+            style={{ 
+              marginTop: '20px', 
+              padding: '12px', 
+              borderRadius: '8px', 
+              backgroundColor: '#FEF9E7', 
+              border: '1px solid #FDE68A',
+              fontSize: '11px',
+              color: '#92400E',
+              lineHeight: '1.4'
+            }}
           >
-            {isSubmitting ? 'Registering Profile...' : 'Create Account'}
-          </button>
-        </form>
-
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)' }}>
-          Already have an employee profile?{' '}
-          <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '600', textDecoration: 'none' }}>
-            Log In
-          </Link>
+            <strong>Default Role Assignment:</strong> Every new registration creates a profile with the <strong>Employee</strong> role. Admins must assign departments and promote roles manually in settings.
+          </div>
         </div>
       </div>
     </div>
