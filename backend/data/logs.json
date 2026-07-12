@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "id": "LOG-1783836589654-887",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Login",
+    "entity": "User",
+    "entityId": "USR0001",
+    "previousValue": "",
+    "newValue": "{\"action\":\"logged_in\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:09:49.654Z",
+    "createdAt": "2026-07-12T06:09:49.654Z"
+  },
+  {
+    "id": "LOG-1783836926379-659",
+    "userId": "USR0004",
+    "userName": "Marcus Wright",
+    "action": "Login",
+    "entity": "User",
+    "entityId": "USR0004",
+    "previousValue": "",
+    "newValue": "{\"action\":\"logged_in\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:15:26.378Z",
+    "createdAt": "2026-07-12T06:15:26.379Z"
+  }
+]

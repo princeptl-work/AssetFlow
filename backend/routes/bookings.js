@@ -40,6 +40,14 @@ function syncBookingStatuses() {
 router.get('/', auth, (req, res) => {
   syncBookingStatuses();
   let bookings = db.read('bookings');
+
+  // Role-based data scoping
+  if (req.user.role === 'Employee') {
+    bookings = bookings.filter(b => b.userId === req.user.id);
+  } else if (req.user.role === 'Department Head') {
+    bookings = bookings.filter(b => b.departmentId === req.user.departmentId);
+  }
+
   const { resourceType, status, userId } = req.query;
 
   if (resourceType) bookings = bookings.filter(b => b.resourceType === resourceType);

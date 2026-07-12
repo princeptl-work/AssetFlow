@@ -79,17 +79,18 @@ const Assets = () => {
   // Selected Asset Detail Drawer
   const [selectedAssetId, setSelectedAssetId] = useState(null);
   const [assetDetails, setAssetDetails] = useState(null);
-  const [detailTab, setDetailTab] = useState('timeline'); // 'timeline' | 'actions'
+  const [detailTab, setDetailTab] = useState('timeline');
+  const [assetForm, setAssetForm] = useState({ name: '', categoryId: '', serialNumber: '', modelNumber: '', manufacturer: '', acquisitionDate: '', acquisitionCost: '', location: '', departmentId: '', condition: 'Excellent', bookable: 'No', remarks: '', photo: '', documents: '' });
+  const [allocateForm, setAllocateForm] = useState({ employeeId: '', departmentId: '', expectedReturnDate: '', notes: '' });
+  const [returnForm, setReturnForm] = useState({ condition: 'Excellent', notes: '' });
+  const [transferForm, setTransferForm] = useState({ targetUserId: '', targetDepartmentId: '', notes: '' });
 
   // Mutating Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  // Forms
-  const [assetForm, setAssetForm] = useState({ name: '', categoryId: '', serialNumber: '', modelNumber: '', manufacturer: '', acquisitionDate: '', acquisitionCost: '', location: '', departmentId: '', condition: 'Excellent', bookable: 'No', remarks: '' });
-  const [allocateForm, setAllocateForm] = useState({ employeeId: '', departmentId: '', expectedReturnDate: '', notes: '' });
-  const [returnForm, setReturnForm] = useState({ condition: 'Excellent', notes: '' });
-  const [transferForm, setTransferForm] = useState({ targetUserId: '', targetDepartmentId: '', notes: '' });
+  // Conflict Double-Allocation Warn
+  const [conflictDetails, setConflictDetails] = useState(null);
 
   const fetchData = async () => {
     if (!token) return;
@@ -165,7 +166,9 @@ const Assets = () => {
       departmentId: '',
       condition: 'Excellent',
       bookable: 'No',
-      remarks: ''
+      remarks: '',
+      photo: '',
+      documents: ''
     });
     setShowCreateModal(true);
   };
@@ -174,11 +177,18 @@ const Assets = () => {
     e.preventDefault();
     if (!assetForm.name || !assetForm.categoryId) return;
 
+    const formattedDocs = assetForm.documents 
+      ? assetForm.documents.split(',').map(d => d.trim()).filter(Boolean) 
+      : [];
+
     try {
       const res = await fetch('/api/assets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(assetForm)
+        body: JSON.stringify({
+          ...assetForm,
+          documents: formattedDocs
+        })
       });
       const data = await res.json();
       if (res.ok) {
@@ -210,18 +220,27 @@ const Assets = () => {
       departmentId: assetDetails.departmentId || '',
       condition: assetDetails.condition,
       bookable: assetDetails.bookable || 'No',
-      remarks: assetDetails.remarks || ''
+      remarks: assetDetails.remarks || '',
+      photo: assetDetails.photo || '',
+      documents: assetDetails.documents ? (Array.isArray(assetDetails.documents) ? assetDetails.documents.join(', ') : String(assetDetails.documents)) : ''
     });
     setShowEditModal(true);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    const formattedDocs = assetForm.documents 
+      ? assetForm.documents.split(',').map(d => d.trim()).filter(Boolean) 
+      : [];
+
     try {
       const res = await fetch(`/api/assets/${selectedAssetId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(assetForm)
+        body: JSON.stringify({
+          ...assetForm,
+          documents: formattedDocs
+        })
       });
       const data = await res.json();
       if (res.ok) {
@@ -257,9 +276,13 @@ const Assets = () => {
       if (res.ok) {
         showToast('Asset allocated successfully.', 'success');
         setAllocateForm({ employeeId: '', departmentId: '', expectedReturnDate: '', notes: '' });
+        setConflictDetails(null);
         loadAssetDetails(selectedAssetId);
         fetchData();
       } else {
+        if (res.status === 400 && data.allocationDetails) {
+          setConflictDetails(data.allocationDetails);
+        }
         showToast(data.message, 'error');
       }
     } catch (err) {
@@ -451,6 +474,16 @@ const Assets = () => {
       >
         {assetDetails && (
           <div>
+            {/* Asset Photo */}
+            {assetDetails.photo && (
+              <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+                <img 
+                  src={assetDetails.photo} 
+                  alt={assetDetails.name} 
+                  style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-color)' }}
+                />
+              </div>
+            )}
             {/* General details grid */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px', backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <div>
@@ -486,6 +519,26 @@ const Assets = () => {
                 <span style={{ fontSize: '12px', fontWeight: 'bold' }}>${Number(assetDetails.acquisitionCost).toLocaleString()}</span>
               </div>
             </div>
+
+            {/* Document attachments list */}
+            {assetDetails.documents && assetDetails.documents.length > 0 && (
+              <div style={{ marginBottom: '24px', backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Documents & Attachments</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {assetDetails.documents.map((doc, idx) => (
+                    <a 
+                      key={idx} 
+                      href={doc} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      style={{ fontSize: '12px', color: 'var(--primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      📄 Document Link #{idx + 1} ({doc.length > 35 ? doc.substring(0, 35) + '...' : doc})
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Simulated Barcodes & QR */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', justifyContent: 'center' }}>
@@ -557,6 +610,31 @@ const Assets = () => {
                 {(assetDetails.status === 'Available' || assetDetails.status === 'Reserved') && (user?.role === 'Admin' || user?.role === 'Asset Manager') && (
                   <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
                     <h4>Allocate Asset</h4>
+                    {conflictDetails && (
+                      <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', marginTop: '10px', fontSize: '12px' }}>
+                        <strong>Double Allocation Conflict:</strong>
+                        <div style={{ marginTop: '4px' }}>
+                          Currently held by {conflictDetails.employeeName || 'Department'} ({conflictDetails.departmentName || 'N/A'}) since {conflictDetails.allocationDate}.
+                        </div>
+                        <button 
+                          type="button" 
+                          className="btn btn-danger btn-sm" 
+                          style={{ marginTop: '8px', width: '100%', padding: '6px' }}
+                          onClick={() => {
+                            setTransferForm({
+                              targetUserId: '',
+                              targetDepartmentId: conflictDetails.departmentId || '',
+                              notes: `Transfer requested due to double allocation conflict. Asset currently held by ${conflictDetails.employeeName || 'Department'}.`
+                            });
+                            setConflictDetails(null);
+                            setDetailTab('actions');
+                            showToast('Transfer request form initiated below.', 'info');
+                          }}
+                        >
+                          Request Reallocation Transfer Instead
+                        </button>
+                      </div>
+                    )}
                     <form onSubmit={handleAllocate} style={{ marginTop: '10px' }}>
                       <div className="form-row">
                         <div className="form-group">
@@ -820,6 +898,20 @@ const Assets = () => {
             />
           </div>
           <div className="form-group">
+            <label className="form-label">Photo URL</label>
+            <input 
+              type="text" className="form-control" placeholder="https://example.com/photo.jpg"
+              value={assetForm.photo} onChange={e => setAssetForm(prev => ({ ...prev, photo: e.target.value }))}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Document Links (comma-separated URLs)</label>
+            <input 
+              type="text" className="form-control" placeholder="https://link1.pdf, https://link2.pdf"
+              value={assetForm.documents} onChange={e => setAssetForm(prev => ({ ...prev, documents: e.target.value }))}
+            />
+          </div>
+          <div className="form-group">
             <label className="form-label">Asset Remarks / Internal Notes</label>
             <textarea 
               className="form-control" rows="2"
@@ -928,6 +1020,20 @@ const Assets = () => {
             <input 
               type="text" className="form-control"
               value={assetForm.location} onChange={e => setAssetForm(prev => ({ ...prev, location: e.target.value }))}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Photo URL</label>
+            <input 
+              type="text" className="form-control" placeholder="https://example.com/photo.jpg"
+              value={assetForm.photo} onChange={e => setAssetForm(prev => ({ ...prev, photo: e.target.value }))}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Document Links (comma-separated URLs)</label>
+            <input 
+              type="text" className="form-control" placeholder="https://link1.pdf, https://link2.pdf"
+              value={assetForm.documents} onChange={e => setAssetForm(prev => ({ ...prev, documents: e.target.value }))}
             />
           </div>
           <div className="form-group">

@@ -12,12 +12,41 @@ import {
   History,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  TrendingUp
 } from 'lucide-react';
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+
+  const getMenuName = (baseName) => {
+    if (!user) return baseName;
+    if (baseName === 'Assets') {
+      if (user.role === 'Employee') return 'My Assets';
+      if (user.role === 'Department Head') return 'Department Assets';
+      return 'Assets';
+    }
+    if (baseName === 'Resource Bookings') {
+      if (user.role === 'Employee') return 'My Bookings';
+      return 'Bookings';
+    }
+    if (baseName === 'Maintenance') {
+      if (user.role === 'Employee') return 'My Requests';
+      if (user.role === 'Department Head') return 'Dept Maintenance';
+      return 'Maintenance';
+    }
+    if (baseName === 'Asset Transfers') {
+      if (user.role === 'Employee') return 'My Transfers';
+      if (user.role === 'Department Head') return 'Approvals';
+      return 'Asset Transfers';
+    }
+    if (baseName === 'Reports') {
+      if (user.role === 'Department Head') return 'Department Reports';
+      return 'Reports';
+    }
+    return baseName;
+  };
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
@@ -25,7 +54,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
     { name: 'Resource Bookings', path: '/bookings', icon: CalendarRange, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
     { name: 'Maintenance', path: '/maintenance', icon: Wrench, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
     { name: 'Asset Transfers', path: '/transfers', icon: ArrowLeftRight, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
-    { name: 'Audit Cycles', path: '/audits', icon: ClipboardCheck, roles: ['Admin', 'Asset Manager', 'Department Head', 'Employee'] },
+    { name: 'Audit Cycles', path: '/audits', icon: ClipboardCheck, roles: ['Admin', 'Asset Manager'] },
+    { name: 'Reports', path: '/reports', icon: TrendingUp, roles: ['Admin', 'Asset Manager', 'Department Head'] },
     { name: 'Organization Setup', path: '/organization', icon: Building2, roles: ['Admin'] },
     { name: 'Activity Logs', path: '/logs', icon: History, roles: ['Admin'] }
   ];
@@ -70,6 +100,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname.startsWith(item.path);
+          const displayName = getMenuName(item.name);
 
           return (
             <li key={item.name} className="menu-item">
@@ -79,7 +110,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen })
                 onClick={() => setIsMobileOpen(false)}
               >
                 <Icon size={18} />
-                {!isCollapsed && <span>{item.name}</span>}
+                {!isCollapsed && <span>{displayName}</span>}
               </Link>
             </li>
           );

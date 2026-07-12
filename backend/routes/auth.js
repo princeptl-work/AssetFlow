@@ -85,6 +85,31 @@ router.post('/login', (req, res) => {
   res.json({ user: userWithoutPassword, token });
 });
 
+// Forgot Password
+router.post('/forgot-password', (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email address is required.' });
+  }
+
+  const user = db.findOne('users', { email: email.toLowerCase() });
+  if (!user) {
+    return res.status(400).json({ message: 'No account found with this email address.' });
+  }
+
+  const newHashedPassword = bcrypt.hashSync('temp123', 10);
+  db.update('users', user.id, { password: newHashedPassword });
+
+  // Log activity
+  logActivity('system', 'System', 'Forgot Password', 'User', user.id, null, { email: user.email }, req);
+
+  res.json({
+    message: 'Password has been reset to default mock credentials.',
+    tempPassword: 'temp123'
+  });
+});
+
 // Get current profile
 router.get('/profile', auth, (req, res) => {
   const { password: _, ...userWithoutPassword } = req.user;

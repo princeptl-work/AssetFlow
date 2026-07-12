@@ -4,12 +4,17 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, CalendarClock, PieChart, Shield } from 'lucide-react';
 
 const Login = () => {
-  const { login, token, loading } = useAuth();
+  const { login, token, loading, showToast } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Forgot Password States
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -27,6 +32,31 @@ const Login = () => {
 
     if (res.success) {
       navigate('/dashboard');
+    }
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setIsResetting(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Success: Password reset to "${data.tempPassword}". Please log in and change it.`, 'success');
+        setShowForgotModal(false);
+        setForgotEmail('');
+      } else {
+        showToast(data.message || 'Reset failed.', 'error');
+      }
+    } catch (err) {
+      showToast('Network error during reset.', 'error');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -115,6 +145,16 @@ const Login = () => {
               />
             </div>
 
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-16px', marginBottom: '20px' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowForgotModal(true)} 
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '12px', cursor: 'pointer', padding: 0 }}
+              >
+                Forgot Password?
+              </button>
+            </div>
+
             <button
               type="submit"
               className="btn btn-primary"
@@ -145,6 +185,63 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '24px',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '400px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+          }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#212529' }}>Forgot Password?</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.4' }}>
+              Enter your email address and we will reset your password to the temporary mock password: <strong>temp123</strong>.
+            </p>
+            <form onSubmit={handleForgotSubmit}>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label">Email Address</label>
+                <input 
+                  type="email" 
+                  className="form-control" 
+                  required 
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="you@company.com"
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary btn-sm" 
+                  onClick={() => setShowForgotModal(false)}
+                  disabled={isResetting}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary btn-sm"
+                  disabled={isResetting}
+                >
+                  {isResetting ? 'Resetting...' : 'Reset Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

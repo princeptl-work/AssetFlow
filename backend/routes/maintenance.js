@@ -10,7 +10,17 @@ router.get('/', auth, (req, res) => {
   const users = db.read('users');
   const assets = db.read('assets');
 
-  const joined = tickets.map(t => {
+  let filteredTickets = tickets;
+  if (req.user.role === 'Employee') {
+    filteredTickets = tickets.filter(t => t.raisedByUserId === req.user.id);
+  } else if (req.user.role === 'Department Head') {
+    filteredTickets = tickets.filter(t => {
+      const asset = assets.find(a => a.id === t.assetId);
+      return asset && asset.departmentId === req.user.departmentId;
+    });
+  }
+
+  const joined = filteredTickets.map(t => {
     const asset = assets.find(a => a.id === t.assetId);
     const requester = users.find(u => u.id === t.raisedByUserId);
     const tech = t.technicianId ? users.find(u => u.id === t.technicianId) : null;
@@ -35,8 +45,17 @@ router.get('/:id', auth, (req, res) => {
     return res.status(404).json({ message: 'Maintenance ticket not found.' });
   }
 
-  const users = db.read('users');
   const asset = db.findById('assets', ticket.assetId);
+
+  // Role-based scope check
+  if (req.user.role === 'Employee' && ticket.raisedByUserId !== req.user.id) {
+    return res.status(403).json({ message: 'Access denied. You can only view your own maintenance requests.' });
+  }
+  if (req.user.role === 'Department Head' && (!asset || asset.departmentId !== req.user.departmentId)) {
+    return res.status(403).json({ message: 'Access denied. You can only view maintenance requests for your department assets.' });
+  }
+
+  const users = db.read('users');
   const requester = users.find(u => u.id === ticket.raisedByUserId);
   const tech = ticket.technicianId ? users.find(u => u.id === ticket.technicianId) : null;
 

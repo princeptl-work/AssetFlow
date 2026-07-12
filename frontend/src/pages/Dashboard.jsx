@@ -39,8 +39,9 @@ const Dashboard = () => {
   const [employees, setEmployees] = useState([]);
 
   // Form Fields State
-  const [assetForm, setAssetForm] = useState({ name: '', categoryId: '', serialNumber: '', modelNumber: '', manufacturer: '', condition: 'Excellent', location: '', bookable: 'No', remarks: '' });
+  const [assetForm, setAssetForm] = useState({ name: '', categoryId: '', serialNumber: '', modelNumber: '', manufacturer: '', condition: 'Excellent', location: '', bookable: 'No', remarks: '', photo: '', documents: '' });
   const [allocateForm, setAllocateForm] = useState({ assetId: '', employeeId: '', departmentId: '', expectedReturnDate: '', notes: '' });
+  const [conflictDetails, setConflictDetails] = useState(null);
   const [bookingForm, setBookingForm] = useState({ resourceType: 'Meeting Room', assetId: '', purpose: '', startTime: '', endTime: '' });
   const [maintenanceForm, setMaintenanceForm] = useState({ assetId: '', issue: '', priority: 'Medium', description: '' });
 
@@ -185,17 +186,24 @@ const Dashboard = () => {
   // Quick Action submissions
   const handleRegisterAsset = async (e) => {
     e.preventDefault();
+    const formattedDocs = assetForm.documents 
+      ? assetForm.documents.split(',').map(d => d.trim()).filter(Boolean) 
+      : [];
+
     try {
       const res = await fetch('/api/assets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(assetForm)
+        body: JSON.stringify({
+          ...assetForm,
+          documents: formattedDocs
+        })
       });
       const data = await res.json();
       if (res.ok) {
         showToast(`Asset registered successfully: ${data.assetTag}`, 'success');
         setActiveModal(null);
-        setAssetForm({ name: '', categoryId: '', serialNumber: '', modelNumber: '', manufacturer: '', condition: 'Excellent', location: '', bookable: 'No', remarks: '' });
+        setAssetForm({ name: '', categoryId: '', serialNumber: '', modelNumber: '', manufacturer: '', condition: 'Excellent', location: '', bookable: 'No', remarks: '', photo: '', documents: '' });
         fetchData();
       } else {
         showToast(data.message, 'error');
@@ -220,9 +228,13 @@ const Dashboard = () => {
       if (res.ok) {
         showToast('Asset allocated successfully.', 'success');
         setActiveModal(null);
+        setConflictDetails(null);
         setAllocateForm({ assetId: '', employeeId: '', departmentId: '', expectedReturnDate: '', notes: '' });
         fetchData();
       } else {
+        if (res.status === 400 && data.allocationDetails) {
+          setConflictDetails(data.allocationDetails);
+        }
         showToast(data.message, 'error');
       }
     } catch (err) {
@@ -633,22 +645,47 @@ const Dashboard = () => {
               </select>
             </div>
           </div>
+          <div className="form-group">
+            <label className="form-label">Photo URL</label>
+            <input 
+              type="text" className="form-control" placeholder="https://example.com/photo.jpg"
+              value={assetForm.photo} onChange={e => setAssetForm(prev => ({ ...prev, photo: e.target.value }))}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Document Links (comma-separated URLs)</label>
+            <input 
+              type="text" className="form-control" placeholder="https://link1.pdf, https://link2.pdf"
+              value={assetForm.documents} onChange={e => setAssetForm(prev => ({ ...prev, documents: e.target.value }))}
+            />
+          </div>
         </form>
       </Modal>
 
       {/* Modal 2: Allocate Asset */}
       <Modal
         isOpen={activeModal === 'allocate'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => { setActiveModal(null); setConflictDetails(null); }}
         title="Quick Allocate Asset"
         footer={
           <>
-            <button className="btn btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
+            <button className="btn btn-secondary" onClick={() => { setActiveModal(null); setConflictDetails(null); }}>Cancel</button>
             <button className="btn btn-primary" onClick={handleAllocateAsset}>Allocate</button>
           </>
         }
       >
         <form onSubmit={handleAllocateAsset}>
+          {conflictDetails && (
+            <div style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', marginBottom: '12px', fontSize: '12px' }}>
+              <strong>Double Allocation Conflict:</strong>
+              <div style={{ marginTop: '4px' }}>
+                Currently held by {conflictDetails.employeeName || 'Department'} ({conflictDetails.departmentName || 'N/A'}) since {conflictDetails.allocationDate}.
+              </div>
+              <div style={{ marginTop: '8px' }}>
+                Please navigate to the <strong>Transfers</strong> screen or the <strong>Assets</strong> detail drawer to request a transfer for this asset.
+              </div>
+            </div>
+          )}
           <div className="form-group">
             <label className="form-label">Select Asset *</label>
             <select

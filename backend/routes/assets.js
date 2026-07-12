@@ -33,6 +33,13 @@ function isValidTransition(fromState, toState) {
 router.get('/', auth, (req, res) => {
   let assets = db.read('assets');
 
+  // Role-based data scoping
+  if (req.user.role === 'Employee') {
+    assets = assets.filter(a => a.allocatedToUserId === req.user.id);
+  } else if (req.user.role === 'Department Head') {
+    assets = assets.filter(a => a.departmentId === req.user.departmentId);
+  }
+
   // Search by Tag, Name, Serial Number, QR, Brand/Manufacturer
   const { search, categoryId, departmentId, status, condition, location, bookable } = req.query;
 
@@ -89,6 +96,14 @@ router.get('/:id', auth, (req, res) => {
     return res.status(404).json({ message: 'Asset not found.' });
   }
 
+  // Role-based individual scope verification
+  if (req.user.role === 'Employee' && asset.allocatedToUserId !== req.user.id) {
+    return res.status(403).json({ message: 'Access denied. You can only view your own allocated assets.' });
+  }
+  if (req.user.role === 'Department Head' && asset.departmentId !== req.user.departmentId) {
+    return res.status(403).json({ message: 'Access denied. You can only view assets belonging to your department.' });
+  }
+
   // Add relations
   const categories = db.read('categories');
   const departments = db.read('departments');
@@ -119,7 +134,7 @@ router.post('/', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   const {
     name, categoryId, serialNumber, modelNumber, manufacturer,
     acquisitionDate, acquisitionCost, location, departmentId,
-    condition, warrantyExpiry, bookable, remarks
+    condition, warrantyExpiry, bookable, remarks, photo, documents
   } = req.body;
 
   if (!name || !categoryId || !condition) {
@@ -179,6 +194,8 @@ router.post('/', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
     remarks: remarks || '',
     qrCode: codes.qrCode,
     barcode: codes.barcode,
+    photo: photo || '',
+    documents: documents || [],
     history: [
       {
         id: `HIST-${Date.now()}`,
@@ -207,7 +224,8 @@ router.put('/:id', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
   const {
     name, categoryId, serialNumber, modelNumber, manufacturer,
     acquisitionDate, acquisitionCost, location, departmentId,
-    condition, status, warrantyExpiry, bookable, remarks
+    condition, status, warrantyExpiry, bookable, remarks,
+    photo, documents
   } = req.body;
 
   // Validate state transitions
@@ -271,6 +289,8 @@ router.put('/:id', auth, checkRole(['Admin', 'Asset Manager']), (req, res) => {
     warrantyExpiry: warrantyExpiry !== undefined ? warrantyExpiry : asset.warrantyExpiry,
     bookable: bookable !== undefined ? bookable : asset.bookable,
     remarks: remarks !== undefined ? remarks : asset.remarks,
+    photo: photo !== undefined ? photo : asset.photo,
+    documents: documents !== undefined ? documents : asset.documents,
     history,
     ...codes
   });

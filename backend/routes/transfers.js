@@ -8,12 +8,22 @@ const { logActivity } = require('../logger');
 router.get('/', auth, (req, res) => {
   const transfers = db.read('transfers') || [];
   
-  // Joins
+  const assets = db.read('assets');
   const users = db.read('users');
   const depts = db.read('departments');
-  const assets = db.read('assets');
 
-  const joined = transfers.map(t => {
+  let filteredTransfers = transfers;
+  if (req.user.role === 'Employee') {
+    filteredTransfers = transfers.filter(t => t.requestedByUserId === req.user.id || t.targetUserId === req.user.id);
+  } else if (req.user.role === 'Department Head') {
+    filteredTransfers = transfers.filter(t => {
+      const asset = assets.find(a => a.id === t.assetId);
+      const sourceDeptId = asset ? asset.departmentId : null;
+      return sourceDeptId === req.user.departmentId || t.targetDepartmentId === req.user.departmentId;
+    });
+  }
+
+  const joined = filteredTransfers.map(t => {
     const asset = assets.find(a => a.id === t.assetId);
     const requester = users.find(u => u.id === t.requestedByUserId);
     const targetUser = users.find(u => u.id === t.targetUserId);

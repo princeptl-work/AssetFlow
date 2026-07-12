@@ -7,10 +7,17 @@ const { logActivity } = require('../logger');
 // Get all audit cycles
 router.get('/', auth, (req, res) => {
   const audits = db.read('audits') || [];
+  
+  // Role scoping: Admin/Manager see all. Others see only cycles where they are assigned as auditor.
+  let filteredAudits = audits;
+  if (req.user.role !== 'Admin' && req.user.role !== 'Asset Manager') {
+    filteredAudits = audits.filter(a => a.auditors && Array.isArray(a.auditors) && a.auditors.includes(req.user.id));
+  }
+
   const depts = db.read('departments');
   const users = db.read('users');
 
-  const joined = audits.map(a => {
+  const joined = filteredAudits.map(a => {
     const dept = depts.find(d => d.id === a.departmentId);
     
     let auditorNames = [];
@@ -37,6 +44,11 @@ router.get('/:id', auth, (req, res) => {
   const audit = db.findById('audits', id);
   if (!audit) {
     return res.status(404).json({ message: 'Audit cycle not found.' });
+  }
+
+  // Role scoping checks
+  if (req.user.role !== 'Admin' && req.user.role !== 'Asset Manager' && (!audit.auditors || !audit.auditors.includes(req.user.id))) {
+    return res.status(403).json({ message: 'Access denied. You are not authorized to view this audit cycle.' });
   }
 
   // Find all assets within the audit scope (department and/or location matching)

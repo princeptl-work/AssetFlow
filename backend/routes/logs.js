@@ -45,7 +45,12 @@ router.get('/global-search', auth, (req, res) => {
   const results = [];
 
   // 1. Search Assets (Tag, Name, Serial, Location)
-  const assets = db.read('assets');
+  let assets = db.read('assets');
+  if (req.user.role === 'Employee') {
+    assets = assets.filter(a => a.allocatedToUserId === req.user.id);
+  } else if (req.user.role === 'Department Head') {
+    assets = assets.filter(a => a.departmentId === req.user.departmentId);
+  }
   assets.forEach(a => {
     if (
       a.name.toLowerCase().includes(query) ||
@@ -64,7 +69,12 @@ router.get('/global-search', auth, (req, res) => {
   });
 
   // 2. Search Employees (ID, Name, Email, Role)
-  const users = db.read('users');
+  let users = db.read('users');
+  if (req.user.role === 'Employee') {
+    users = []; // Employees cannot view other employees
+  } else if (req.user.role === 'Department Head') {
+    users = users.filter(u => u.departmentId === req.user.departmentId);
+  }
   users.forEach(u => {
     if (
       u.name.toLowerCase().includes(query) ||
@@ -83,7 +93,12 @@ router.get('/global-search', auth, (req, res) => {
   });
 
   // 3. Search Departments (Name)
-  const depts = db.read('departments');
+  let depts = db.read('departments');
+  if (req.user.role === 'Employee') {
+    depts = []; // Employees cannot view departments
+  } else if (req.user.role === 'Department Head') {
+    depts = depts.filter(d => d.id === req.user.departmentId);
+  }
   depts.forEach(d => {
     if (d.name.toLowerCase().includes(query) || (d.description && d.description.toLowerCase().includes(query))) {
       results.push({
@@ -97,9 +112,15 @@ router.get('/global-search', auth, (req, res) => {
   });
 
   // 4. Search Bookings (Purpose, Resource)
-  const bookings = db.read('bookings');
+  let bookings = db.read('bookings');
+  if (req.user.role === 'Employee') {
+    bookings = bookings.filter(b => b.userId === req.user.id);
+  } else if (req.user.role === 'Department Head') {
+    bookings = bookings.filter(b => b.departmentId === req.user.departmentId);
+  }
   bookings.forEach(b => {
-    const user = users.find(u => u.id === b.userId);
+    const usersList = db.read('users');
+    const user = usersList.find(u => u.id === b.userId);
     if (
       b.resourceType.toLowerCase().includes(query) ||
       b.purpose.toLowerCase().includes(query) ||
@@ -116,9 +137,18 @@ router.get('/global-search', auth, (req, res) => {
   });
 
   // 5. Search Maintenance (Issue, Description)
-  const tickets = db.read('maintenance');
+  let tickets = db.read('maintenance');
+  if (req.user.role === 'Employee') {
+    tickets = tickets.filter(t => t.raisedByUserId === req.user.id);
+  } else if (req.user.role === 'Department Head') {
+    tickets = tickets.filter(t => {
+      const asset = db.findById('assets', t.assetId);
+      return asset && asset.departmentId === req.user.departmentId;
+    });
+  }
   tickets.forEach(t => {
-    const asset = assets.find(a => a.id === t.assetId);
+    const assetsList = db.read('assets');
+    const asset = assetsList.find(a => a.id === t.assetId);
     if (
       t.issue.toLowerCase().includes(query) ||
       (t.description && t.description.toLowerCase().includes(query)) ||
@@ -135,7 +165,10 @@ router.get('/global-search', auth, (req, res) => {
   });
 
   // 6. Search Audits (Name, Location)
-  const audits = db.read('audits');
+  let audits = db.read('audits');
+  if (req.user.role !== 'Admin' && req.user.role !== 'Asset Manager') {
+    audits = []; // Audits only visible to Admin & Asset Manager
+  }
   audits.forEach(au => {
     if (
       au.name.toLowerCase().includes(query) ||

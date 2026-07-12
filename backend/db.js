@@ -30,13 +30,13 @@ const TABLE_COLUMNS = {
   users: ['id', 'employeeId', 'name', 'email', 'password', 'phone', 'photo', 'departmentId', 'role', 'status', 'joiningDate', 'createdAt', 'updatedAt'],
   departments: ['id', 'name', 'managerId', 'parentId', 'description', 'status', 'createdAt', 'updatedAt'],
   categories: ['id', 'name', 'warrantyPeriod', 'expectedLife', 'color', 'manufacturer', 'description', 'status', 'createdAt', 'updatedAt'],
-  assets: ['id', 'name', 'categoryId', 'serialNumber', 'modelNumber', 'manufacturer', 'acquisitionDate', 'acquisitionCost', 'location', 'departmentId', 'condition', 'status', 'warrantyExpiry', 'bookable', 'remarks', 'allocatedToUserId', 'allocatedDate', 'expectedReturnDate', 'assetTag', 'qrCode', 'barcode', 'history', 'createdAt', 'updatedAt'],
-  bookings: ['id', 'assetId', 'userId', 'startDate', 'endDate', 'purpose', 'status', 'approvedBy', 'createdAt', 'updatedAt'],
-  maintenance: ['id', 'assetId', 'type', 'description', 'cost', 'startDate', 'endDate', 'performedBy', 'notes', 'status', 'createdAt', 'updatedAt'],
-  audits: ['id', 'title', 'description', 'status', 'startDate', 'endDate', 'auditorId', 'results', 'createdAt', 'updatedAt'],
+  assets: ['id', 'name', 'categoryId', 'serialNumber', 'modelNumber', 'manufacturer', 'acquisitionDate', 'acquisitionCost', 'location', 'departmentId', 'condition', 'status', 'warrantyExpiry', 'bookable', 'remarks', 'allocatedToUserId', 'allocatedDate', 'expectedReturnDate', 'assetTag', 'qrCode', 'barcode', 'history', 'photo', 'documents', 'createdAt', 'updatedAt'],
+  bookings: ['id', 'resourceType', 'assetId', 'userId', 'purpose', 'startTime', 'endTime', 'status', 'departmentId', 'createdAt', 'updatedAt'],
+  maintenance: ['id', 'assetId', 'raisedByUserId', 'issue', 'priority', 'description', 'status', 'technicianId', 'images', 'documents', 'timeline', 'createdAt', 'updatedAt'],
+  audits: ['id', 'name', 'departmentId', 'location', 'startDate', 'endDate', 'auditors', 'description', 'status', 'details', 'discrepancyReport', 'closedAt', 'createdAt', 'updatedAt'],
   notifications: ['id', 'userId', 'message', 'type', 'link', 'isRead', 'timestamp'],
-  logs: ['id', 'userId', 'userName', 'action', 'targetType', 'targetId', 'previousValue', 'newValue', 'timestamp', 'ipAddress', 'userAgent'],
-  transfers: ['id', 'assetId', 'sourceDepartmentId', 'targetDepartmentId', 'targetUserId', 'requestedById', 'deptHeadApproverId', 'status', 'remarks', 'createdAt', 'updatedAt']
+  logs: ['id', 'userId', 'userName', 'action', 'entity', 'entityId', 'previousValue', 'newValue', 'ip', 'timestamp'],
+  transfers: ['id', 'assetId', 'requestedByUserId', 'targetUserId', 'targetDepartmentId', 'status', 'deptHeadApproverId', 'assetManagerApproverId', 'notes', 'requestDate', 'deptHeadApprovalDate', 'assetManagerApprovalDate', 'createdAt', 'updatedAt']
 };
 
 const TABLE_SCHEMAS = {
@@ -107,6 +107,8 @@ const TABLE_SCHEMAS = {
       "qrCode" TEXT,
       "barcode" TEXT,
       "history" JSONB,
+      "photo" TEXT,
+      "documents" JSONB,
       "createdAt" VARCHAR(255),
       "updatedAt" VARCHAR(255)
     )
@@ -114,13 +116,14 @@ const TABLE_SCHEMAS = {
   bookings: `
     CREATE TABLE IF NOT EXISTS "bookings" (
       "id" VARCHAR(255) PRIMARY KEY,
+      "resourceType" VARCHAR(255),
       "assetId" VARCHAR(255),
       "userId" VARCHAR(255),
-      "startDate" VARCHAR(255),
-      "endDate" VARCHAR(255),
       "purpose" TEXT,
+      "startTime" VARCHAR(255),
+      "endTime" VARCHAR(255),
       "status" VARCHAR(255),
-      "approvedBy" VARCHAR(255),
+      "departmentId" VARCHAR(255),
       "createdAt" VARCHAR(255),
       "updatedAt" VARCHAR(255)
     )
@@ -129,14 +132,15 @@ const TABLE_SCHEMAS = {
     CREATE TABLE IF NOT EXISTS "maintenance" (
       "id" VARCHAR(255) PRIMARY KEY,
       "assetId" VARCHAR(255),
-      "type" VARCHAR(255),
+      "raisedByUserId" VARCHAR(255),
+      "issue" VARCHAR(255),
+      "priority" VARCHAR(255),
       "description" TEXT,
-      "cost" NUMERIC,
-      "startDate" VARCHAR(255),
-      "endDate" VARCHAR(255),
-      "performedBy" VARCHAR(255),
-      "notes" TEXT,
       "status" VARCHAR(255),
+      "technicianId" VARCHAR(255),
+      "images" JSONB,
+      "documents" JSONB,
+      "timeline" JSONB,
       "createdAt" VARCHAR(255),
       "updatedAt" VARCHAR(255)
     )
@@ -144,13 +148,17 @@ const TABLE_SCHEMAS = {
   audits: `
     CREATE TABLE IF NOT EXISTS "audits" (
       "id" VARCHAR(255) PRIMARY KEY,
-      "title" VARCHAR(255),
-      "description" TEXT,
-      "status" VARCHAR(255),
+      "name" VARCHAR(255),
+      "departmentId" VARCHAR(255),
+      "location" VARCHAR(255),
       "startDate" VARCHAR(255),
       "endDate" VARCHAR(255),
-      "auditorId" VARCHAR(255),
-      "results" JSONB,
+      "auditors" JSONB,
+      "description" TEXT,
+      "status" VARCHAR(255),
+      "details" JSONB,
+      "discrepancyReport" JSONB,
+      "closedAt" VARCHAR(255),
       "createdAt" VARCHAR(255),
       "updatedAt" VARCHAR(255)
     )
@@ -172,26 +180,28 @@ const TABLE_SCHEMAS = {
       "userId" VARCHAR(255),
       "userName" VARCHAR(255),
       "action" VARCHAR(255),
-      "targetType" VARCHAR(255),
-      "targetId" VARCHAR(255),
-      "previousValue" JSONB,
-      "newValue" JSONB,
-      "timestamp" VARCHAR(255),
-      "ipAddress" VARCHAR(255),
-      "userAgent" TEXT
+      "entity" VARCHAR(255),
+      "entityId" VARCHAR(255),
+      "previousValue" TEXT,
+      "newValue" TEXT,
+      "ip" VARCHAR(255),
+      "timestamp" VARCHAR(255)
     )
   `,
   transfers: `
     CREATE TABLE IF NOT EXISTS "transfers" (
       "id" VARCHAR(255) PRIMARY KEY,
       "assetId" VARCHAR(255),
-      "sourceDepartmentId" VARCHAR(255),
-      "targetDepartmentId" VARCHAR(255),
+      "requestedByUserId" VARCHAR(255),
       "targetUserId" VARCHAR(255),
-      "requestedById" VARCHAR(255),
-      "deptHeadApproverId" VARCHAR(255),
+      "targetDepartmentId" VARCHAR(255),
       "status" VARCHAR(255),
-      "remarks" TEXT,
+      "deptHeadApproverId" VARCHAR(255),
+      "assetManagerApproverId" VARCHAR(255),
+      "notes" TEXT,
+      "requestDate" VARCHAR(255),
+      "deptHeadApprovalDate" VARCHAR(255),
+      "assetManagerApprovalDate" VARCHAR(255),
       "createdAt" VARCHAR(255),
       "updatedAt" VARCHAR(255)
     )
@@ -230,6 +240,18 @@ if (process.env.DATABASE_URL) {
       console.log('==================================================');
       
       try {
+        // Automatic Migration: Check if 'photo' column exists in 'assets' table. 
+        // If not, drop all tables to apply the new schema.
+        const checkCol = await client.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name='assets' AND column_name='photo'
+        `);
+        if (checkCol.rows.length === 0) {
+          console.log('[PG] Schema correction needed. Dropping old tables...');
+          await client.query(`DROP TABLE IF EXISTS "users", "departments", "categories", "assets", "bookings", "maintenance", "audits", "notifications", "logs", "transfers" CASCADE`);
+        }
+
         // Create tables if they do not exist
         for (const col of COLLECTIONS) {
           await client.query(TABLE_SCHEMAS[col]);
@@ -241,6 +263,9 @@ if (process.env.DATABASE_URL) {
         
         // Sync tables
         await syncFromPostgres();
+
+        // Run overdue allocations checker
+        await checkOverdueAllocations();
       } catch (schemaErr) {
         client.release();
         console.error('[PG Schema Initialization Error]:', schemaErr);
@@ -277,12 +302,12 @@ async function mirrorToPostgres(table, data) {
           for (const col of cols) {
             let val = item[col];
             // Format value appropriately
-            if (col === 'history' || col === 'results' || col === 'previousValue' || col === 'newValue') {
+            if (col === 'history' || col === 'results' || col === 'previousValue' || col === 'newValue' || col === 'auditors' || col === 'details' || col === 'discrepancyReport' || col === 'images' || col === 'documents' || col === 'timeline') {
               val = val ? JSON.stringify(val) : null;
             } else if (col === 'warrantyPeriod' || col === 'expectedLife') {
-              val = val !== undefined && val !== null ? parseInt(val, 10) : null;
+              val = val !== undefined && val !== null && val !== '' ? parseInt(val, 10) : null;
             } else if (col === 'acquisitionCost' || col === 'cost') {
-              val = val !== undefined && val !== null ? parseFloat(val) : null;
+              val = val !== undefined && val !== null && val !== '' ? parseFloat(val) : null;
             } else if (col === 'isRead') {
               val = val !== undefined && val !== null ? !!val : null;
             } else {
@@ -322,7 +347,7 @@ async function syncFromPostgres() {
         for (const c of cols) {
           let val = row[c] !== undefined ? row[c] : row[c.toLowerCase()];
           // Parse types back to JS if needed
-          if (c === 'history' || c === 'results' || c === 'previousValue' || c === 'newValue') {
+          if (c === 'history' || c === 'results' || c === 'previousValue' || c === 'newValue' || c === 'auditors' || c === 'details' || c === 'discrepancyReport' || c === 'images' || c === 'documents' || c === 'timeline') {
             if (val) {
               if (typeof val === 'string') {
                 try { cleanItem[c] = JSON.parse(val); } catch(e) { cleanItem[c] = val; }
@@ -330,7 +355,13 @@ async function syncFromPostgres() {
                 cleanItem[c] = val;
               }
             } else {
-              cleanItem[c] = null;
+              if (c === 'history' || c === 'auditors' || c === 'discrepancyReport' || c === 'images' || c === 'documents' || c === 'timeline') {
+                cleanItem[c] = [];
+              } else if (c === 'details') {
+                cleanItem[c] = {};
+              } else {
+                cleanItem[c] = null;
+              }
             }
           } else if (c === 'warrantyPeriod' || c === 'expectedLife') {
             cleanItem[c] = val !== null && val !== undefined ? parseInt(val, 10) : null;
@@ -359,6 +390,73 @@ async function syncFromPostgres() {
     } catch (err) {
       console.error(`[PG Sync Error] Failed to sync collection "${col}":`, err);
     }
+  }
+}
+
+// Check for overdue allocations and generate notifications
+async function checkOverdueAllocations() {
+  try {
+    const assets = db.read('assets');
+    const todayStr = new Date().toISOString().split('T')[0];
+    const notifications = db.read('notifications');
+    const users = db.read('users');
+
+    const overdueAssets = assets.filter(a => 
+      a.status === 'Allocated' && 
+      a.expectedReturnDate && 
+      a.expectedReturnDate < todayStr
+    );
+
+    let createdCount = 0;
+
+    for (const asset of overdueAssets) {
+      const targetUserId = asset.allocatedToUserId;
+      if (!targetUserId) continue;
+
+      // Check if alert already exists for this asset
+      const alertExists = notifications.some(n => 
+        n.userId === targetUserId && 
+        n.type === 'Overdue Return Alert' && 
+        n.message.includes(asset.assetTag)
+      );
+
+      if (!alertExists) {
+        const holder = users.find(u => u.id === targetUserId);
+        const holderName = holder ? holder.name : 'Employee';
+        const msg = `Asset "${asset.name}" (${asset.assetTag}) allocated to you is overdue since ${asset.expectedReturnDate}. Please return it.`;
+        
+        // Notify the holding employee
+        db.create('notifications', {
+          userId: targetUserId,
+          message: msg,
+          type: 'Overdue Return Alert',
+          link: '/assets',
+          isRead: false,
+          timestamp: new Date().toISOString()
+        });
+
+        // Notify Admins and Asset Managers
+        const adminsAndManagers = users.filter(u => u.role === 'Admin' || u.role === 'Asset Manager');
+        adminsAndManagers.forEach(mgr => {
+          db.create('notifications', {
+            userId: mgr.id,
+            message: `Overdue Return Alert: Asset "${asset.name}" (${asset.assetTag}) held by ${holderName} was expected back on ${asset.expectedReturnDate}.`,
+            type: 'Overdue Return Alert',
+            link: '/assets',
+            isRead: false,
+            timestamp: new Date().toISOString()
+          });
+        });
+
+        createdCount++;
+      }
+    }
+
+    if (createdCount > 0) {
+      console.log(`[PG Overdue Check] Generated ${createdCount} new Overdue Return Alert notifications.`);
+    }
+  } catch (err) {
+    console.error('Error running checkOverdueAllocations:', err);
   }
 }
 
