@@ -24,5 +24,57 @@
     "ip": "::1",
     "timestamp": "2026-07-12T06:15:26.378Z",
     "createdAt": "2026-07-12T06:15:26.379Z"
+  },
+  {
+    "id": "LOG-1783837917835-225",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Deactivate",
+    "entity": "User",
+    "entityId": "USR0002",
+    "previousValue": "Active",
+    "newValue": "Inactive",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:31:57.835Z",
+    "createdAt": "2026-07-12T06:31:57.835Z"
+  },
+  {
+    "id": "LOG-1783837921251-981",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Reactivate",
+    "entity": "User",
+    "entityId": "USR0002",
+    "previousValue": "Inactive",
+    "newValue": "Active",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:32:01.251Z",
+    "createdAt": "2026-07-12T06:32:01.251Z"
+  },
+  {
+    "id": "LOG-1783837924339-67",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Deactivate",
+    "entity": "User",
+    "entityId": "USR0002",
+    "previousValue": "Active",
+    "newValue": "Inactive",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:32:04.339Z",
+    "createdAt": "2026-07-12T06:32:04.339Z"
+  },
+  {
+    "id": "LOG-1783837925780-157",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Reactivate",
+    "entity": "User",
+    "entityId": "USR0002",
+    "previousValue": "Inactive",
+    "newValue": "Active",
+    "ip": "::1",
+    "timestamp": "2026-07-12T06:32:05.780Z",
+    "createdAt": "2026-07-12T06:32:05.780Z"
   }
 ]
