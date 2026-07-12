@@ -1,0 +1,256 @@
+[
+  {
+    "id": "AF-0001",
+    "name": "MacBook Pro 16\"",
+    "categoryId": "CAT-1783830531625-320",
+    "serialNumber": "MBP-2026-001",
+    "modelNumber": "M3 Max",
+    "manufacturer": "Apple",
+    "acquisitionDate": "2025-06-15",
+    "acquisitionCost": 3499,
+    "location": "HQ - Floor 3",
+    "departmentId": "DEP-1783830531268-685",
+    "condition": "Excellent",
+    "status": "Allocated",
+    "warrantyExpiry": "2027-06-15",
+    "bookable": "No",
+    "remarks": "Primary developer workstation",
+    "allocatedToUserId": "USR0004",
+    "allocatedDate": "2026-01-10",
+    "expectedReturnDate": "2026-12-31",
+    "assetTag": "AF-0001",
+    "qrCode": "assetflow://asset/AF-0001?sn=MBP-2026-001",
+    "barcode": "AF*0001*MBP-2026-001",
+    "history": [
+      {
+        "id": "HIST-SEED-0",
+        "eventType": "Created",
+        "date": "2026-07-12T04:28:51.636Z",
+        "user": "System Administrator",
+        "userId": "system",
+        "notes": "Seeded demo asset during system initialization."
+      }
+    ],
+    "createdAt": "2026-07-12T04:28:51.637Z"
+  },
+  {
+    "id": "AF-0002",
+    "name": "Dell UltraSharp Monitor 27\"",
+    "categoryId": "CAT-1783830531625-320",
+    "serialNumber": "DELL-MON-042",
+    "modelNumber": "U2723QE",
+    "manufacturer": "Dell",
+    "acquisitionDate": "2025-08-01",
+    "acquisitionCost": 649,
+    "location": "HQ - Floor 3",
+    "departmentId": "DEP-1783830531268-685",
+    "condition": "Good",
+    "status": "Available",
+    "warrantyExpiry": "2027-08-01",
+    "bookable": "No",
+    "remarks": "Spare monitor pool",
+    "assetTag": "AF-0002",
+    "qrCode": "assetflow://asset/AF-0002?sn=DELL-MON-042",
+    "barcode": "AF*0002*DELL-MON-042",
+    "history": [
+      {
+        "id": "HIST-SEED-1",
+        "eventType": "Created",
+        "date": "2026-07-12T04:28:51.637Z",
+        "user": "System Administrator",
+        "userId": "system",
+        "notes": "Seeded demo asset during system initialization."
+      }
+    ],
+    "createdAt": "2026-07-12T04:28:51.638Z"
+  },
+  {
+    "id": "AF-0003",
+    "name": "Herman Miller Aeron Chair",
+    "categoryId": "CAT-1783830531627-149",
+    "serialNumber": "HM-AERON-118",
+    "modelNumber": "Size B",
+    "manufacturer": "Herman Miller",
+    "acquisitionDate": "2024-03-20",
+    "acquisitionCost": 1395,
+    "location": "HQ - Floor 2",
+    "departmentId": "DEP-1783830531270-260",
+    "condition": "Good",
+    "status": "Allocated",
+    "warrantyExpiry": "2025-03-20",
+    "bookable": "No",
+    "remarks": "Ergonomic seating",
+    "allocatedToUserId": "USR0004",
+    "allocatedDate": "2025-04-01",
+    "expectedReturnDate": "2026-07-01",
+    "assetTag": "AF-0003",
+    "qrCode": "assetflow://asset/AF-0003?sn=HM-AERON-118",
+    "barcode": "AF*0003*HM-AERON-118",
+    "history": [
+      {
+        "id": "HIST-SEED-2",
+        "eventType": "Created",
+        "date": "2026-07-12T04:28:51.639Z",
+        "user": "System Administrator",
+        "userId": "system",
+        "notes": "Seeded demo asset during system initialization."
+      }
+    ],
+    "createdAt": "2026-07-12T04:28:51.640Z"
+  },
+  {
+    "id": "AF-0004",
+    "name": "Tesla Model 3 Fleet Car",
+    "categoryId": "CAT-1783830531630-124",
+    "serialNumber": "TESLA-M3-007",
+    "modelNumber": "Long Range",
+    "manufacturer": "Tesla",
+    "acquisitionDate": "2025-01-15",
+    "acquisitionCost": 48000,
+    "location": "Parking Lot A",
+    "departmentId": "DEP-1783830531270-260",
+    "condition": "Excellent",
+    "status": "Available",
+    "warrantyExpiry": "2028-01-15",
+    "bookable": "Yes",
+    "remarks": "Company fleet vehicle",
+    "assetTag": "AF-0004",
+    "qrCode": "assetflow://asset/AF-0004?sn=TESLA-M3-007",
+    "barcode": "AF*0004*TESLA-M3-007",
+    "history": [
+      {
+        "id": "HIST-SEED-3",
+        "eventType": "Created",
+        "date": "2026-07-12T04:28:51.640Z",
+        "user": "System Administrator",
+        "userId": "system",
+        "notes": "Seeded demo asset during system initialization."
+      }
+    ],
+    "createdAt": "2026-07-12T04:28:51.641Z"
+  },
+  {
+    "id": "AF-0005",
+    "name": "Epson Projector Pro",
+    "categoryId": "CAT-1783830531634-947",
+    "serialNumber": "EPS-PROJ-003",
+    "modelNumber": "PowerLite L610U",
+    "manufacturer": "Epson",
+    "acquisitionDate": "2025-05-10",
+    "acquisitionCost": 2200,
+    "location": "Conference Room B",
+    "departmentId": "DEP-1783830531268-685",
+    "condition": "Good",
+    "status": "Available",
+    "warrantyExpiry": "2026-05-10",
+    "bookable": "Yes",
+    "remarks": "4K conference projector",
+    "assetTag": "AF-0005",
+    "qrCode": "assetflow://asset/AF-0005?sn=EPS-PROJ-003",
+    "barcode": "AF*0005*EPS-PROJ-003",
+    "history": [
+      {
+        "id": "HIST-SEED-4",
+        "eventType": "Created",
+        "date": "2026-07-12T04:28:51.642Z",
+        "user": "System Administrator",
+        "userId": "system",
+        "notes": "Seeded demo asset during system initialization."
+      }
+    ],
+    "createdAt": "2026-07-12T04:28:51.643Z"
+  },
+  {
+    "id": "AF-0006",
+    "name": "Conference Room Alpha",
+    "categoryId": "CAT-1783830531633-265",
+    "serialNumber": "ROOM-ALPHA-01",
+    "modelNumber": "N/A",
+    "manufacturer": "N/A",
+    "acquisitionDate": "2020-01-01",
+    "acquisitionCost": 0,
+    "location": "HQ - Floor 1",
+    "departmentId": "DEP-1783830531270-260",
+    "condition": "Good",
+    "status": "Available",
+    "warrantyExpiry": "",
+    "bookable": "Yes",
+    "remarks": "12-person meeting room with video conferencing",
+    "assetTag": "AF-0006",
+    "qrCode": "assetflow://asset/AF-0006?sn=ROOM-ALPHA-01",
+    "barcode": "AF*0006*ROOM-ALPHA-01",
+    "history": [
+      {
+        "id": "HIST-SEED-5",
+        "eventType": "Created",
+        "date": "2026-07-12T04:28:51.644Z",
+        "user": "System Administrator",
+        "userId": "system",
+        "notes": "Seeded demo asset during system initialization."
+      }
+    ],
+    "createdAt": "2026-07-12T04:28:51.645Z"
+  },
+  {
+    "id": "AF-0007",
+    "name": "HP LaserJet Enterprise",
+    "categoryId": "CAT-1783830531625-320",
+    "serialNumber": "HP-LJ-992",
+    "modelNumber": "M607dn",
+    "manufacturer": "HP",
+    "acquisitionDate": "2024-11-01",
+    "acquisitionCost": 899,
+    "location": "HQ - Floor 2",
+    "departmentId": "DEP-1783830531270-260",
+    "condition": "Fair",
+    "status": "Under Maintenance",
+    "warrantyExpiry": "2025-11-01",
+    "bookable": "No",
+    "remarks": "Paper jam issues reported",
+    "assetTag": "AF-0007",
+    "qrCode": "assetflow://asset/AF-0007?sn=HP-LJ-992",
+    "barcode": "AF*0007*HP-LJ-992",
+    "history": [
+      {
+        "id": "HIST-SEED-6",
+        "eventType": "Created",
+        "date": "2026-07-12T04:28:51.646Z",
+        "user": "System Administrator",
+        "userId": "system",
+        "notes": "Seeded demo asset during system initialization."
+      }
+    ],
+    "createdAt": "2026-07-12T04:28:51.648Z"
+  },
+  {
+    "id": "AF-0008",
+    "name": "Standing Desk Pro",
+    "categoryId": "CAT-1783830531627-149",
+    "serialNumber": "SD-PRO-055",
+    "modelNumber": "Electric Dual Motor",
+    "manufacturer": "FlexiSpot",
+    "acquisitionDate": "2025-02-28",
+    "acquisitionCost": 599,
+    "location": "HQ - Floor 3",
+    "departmentId": "DEP-1783830531268-685",
+    "condition": "Excellent",
+    "status": "Available",
+    "warrantyExpiry": "2026-02-28",
+    "bookable": "No",
+    "remarks": "Height-adjustable desk",
+    "assetTag": "AF-0008",
+    "qrCode": "assetflow://asset/AF-0008?sn=SD-PRO-055",
+    "barcode": "AF*0008*SD-PRO-055",
+    "history": [
+      {
+        "id": "HIST-SEED-7",
+        "eventType": "Created",
+        "date": "2026-07-12T04:28:51.648Z",
+        "user": "System Administrator",
+        "userId": "system",
+        "notes": "Seeded demo asset during system initialization."
+      }
+    ],
+    "createdAt": "2026-07-12T04:28:51.649Z"
+  }
+]

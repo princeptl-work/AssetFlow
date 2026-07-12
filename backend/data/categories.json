@@ -1,0 +1,68 @@
+[
+  {
+    "id": "CAT-1783830531625-320",
+    "name": "Electronics",
+    "warrantyPeriod": 24,
+    "expectedLife": 4,
+    "color": "#4F46E5",
+    "manufacturer": "Apple/Dell/HP",
+    "description": "Laptops, desktops, monitors, keyboards, mice, and other peripherals.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.626Z"
+  },
+  {
+    "id": "CAT-1783830531627-149",
+    "name": "Furniture",
+    "warrantyPeriod": 12,
+    "expectedLife": 10,
+    "color": "#D97706",
+    "manufacturer": "Herman Miller/Ikea",
+    "description": "Office chairs, standing desks, conference tables, cabinets.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.627Z"
+  },
+  {
+    "id": "CAT-1783830531630-124",
+    "name": "Vehicles",
+    "warrantyPeriod": 36,
+    "expectedLife": 8,
+    "color": "#059669",
+    "manufacturer": "Tesla/Toyota",
+    "description": "Company cars, vans, shuttle buses.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.630Z"
+  },
+  {
+    "id": "CAT-1783830531632-949",
+    "name": "Machinery",
+    "warrantyPeriod": 12,
+    "expectedLife": 12,
+    "color": "#DC2626",
+    "manufacturer": "Caterpillar/Siemens",
+    "description": "Heavy machinery, tools, and industrial assets.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.632Z"
+  },
+  {
+    "id": "CAT-1783830531633-265",
+    "name": "Rooms",
+    "warrantyPeriod": 0,
+    "expectedLife": 50,
+    "color": "#7C3AED",
+    "manufacturer": "N/A",
+    "description": "Meeting rooms, conference rooms, testing labs, and training halls.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.633Z"
+  },
+  {
+    "id": "CAT-1783830531634-947",
+    "name": "Equipment",
+    "warrantyPeriod": 12,
+    "expectedLife": 5,
+    "color": "#2563EB",
+    "manufacturer": "Epson/Logitech",
+    "description": "Projectors, speakers, whiteboards, video systems.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.634Z"
+  }
+]

@@ -1,0 +1,39 @@
+[
+  {
+    "id": "DEP-1783830531268-685",
+    "name": "IT Department",
+    "managerId": "",
+    "parentId": "",
+    "description": "Enterprise information technology infrastructure and services.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.268Z"
+  },
+  {
+    "id": "DEP-1783830531270-260",
+    "name": "Operations Department",
+    "managerId": "USR0003",
+    "parentId": "",
+    "description": "Physical facilities, fleet management, and logistics.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.271Z",
+    "updatedAt": "2026-07-12T04:28:51.550Z"
+  },
+  {
+    "id": "DEP-1783830531272-230",
+    "name": "Human Resources",
+    "managerId": "",
+    "parentId": "",
+    "description": "Talent management, employee directory, and support.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.272Z"
+  },
+  {
+    "id": "DEP-1783830531274-154",
+    "name": "Finance & Accounts",
+    "managerId": "",
+    "parentId": "",
+    "description": "Asset accounting, budgets, and reporting.",
+    "status": "Active",
+    "createdAt": "2026-07-12T04:28:51.274Z"
+  }
+]
