@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Background Rounded Square -->
+  <rect x="0" y="0" width="500" height="500" rx="140" ry="140" fill="#663B62" />
+  
+  <!-- Text "AF" -->
+  <text x="50%" y="53%" 
+        font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+        font-size="220" 
+        font-weight="900" 
+        fill="#FFFFFF" 
+        text-anchor="middle" 
+        dominant-baseline="middle"
+        letter-spacing="-6">AF</text>
+</svg>
