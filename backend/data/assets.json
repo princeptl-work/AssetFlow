@@ -368,5 +368,42 @@
     "documents": [],
     "createdAt": "2026-07-12T07:25:09.672Z",
     "updatedAt": ""
+  },
+  {
+    "id": "AF-0011",
+    "name": "prince",
+    "categoryId": "CAT-1783830531625-320",
+    "serialNumber": "",
+    "modelNumber": "",
+    "manufacturer": "",
+    "acquisitionDate": "2026-07-12",
+    "acquisitionCost": 0,
+    "location": "",
+    "departmentId": "",
+    "condition": "Excellent",
+    "status": "Available",
+    "warrantyExpiry": "",
+    "bookable": "No",
+    "remarks": "",
+    "allocatedToUserId": "",
+    "allocatedDate": "",
+    "expectedReturnDate": "",
+    "assetTag": "AF-0011",
+    "qrCode": "assetflow://asset/AF-0011?sn=",
+    "barcode": "AF*0011*0",
+    "history": [
+      {
+        "id": "HIST-1783841575478",
+        "date": "2026-07-12T07:32:55.478Z",
+        "user": "System Administrator",
+        "notes": "Initial registration in AssetFlow system.",
+        "userId": "USR0001",
+        "eventType": "Created"
+      }
+    ],
+    "photo": "",
+    "documents": [],
+    "createdAt": "2026-07-12T07:32:55.479Z",
+    "updatedAt": ""
   }
 ]

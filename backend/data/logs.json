@@ -280,5 +280,89 @@
     },
     "ip": "::1",
     "timestamp": "2026-07-12T07:25:09.816Z"
+  },
+  {
+    "id": "LOG-1783841485227-951",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Update",
+    "entity": "Department",
+    "entityId": "DEP-1783830531272-230",
+    "previousValue": "{\"id\":\"DEP-1783830531272-230\",\"name\":\"Human Resources\",\"managerId\":\"\",\"parentId\":\"\",\"description\":\"Talent management, employee directory, and support.\",\"status\":\"Inactive\",\"createdAt\":\"2026-07-12T04:28:51.272Z\",\"updatedAt\":\"2026-07-12T07:03:34.556Z\"}",
+    "newValue": "{\"id\":\"DEP-1783830531272-230\",\"name\":\"Human Resources\",\"managerId\":\"\",\"parentId\":\"\",\"description\":\"Talent management, employee directory, and support.\",\"status\":\"Active\",\"createdAt\":\"2026-07-12T04:28:51.272Z\",\"updatedAt\":\"2026-07-12T07:31:25.209Z\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T07:31:25.215Z"
+  },
+  {
+    "id": "LOG-1783841575487-327",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Create",
+    "entity": "Asset",
+    "entityId": "AF-0011",
+    "previousValue": null,
+    "newValue": "{\"id\":\"AF-0011\",\"name\":\"prince\",\"categoryId\":\"CAT-1783830531625-320\",\"serialNumber\":\"\",\"modelNumber\":\"\",\"manufacturer\":\"\",\"acquisitionDate\":\"2026-07-12\",\"acquisitionCost\":0,\"location\":\"\",\"departmentId\":\"\",\"condition\":\"Excellent\",\"status\":\"Available\",\"warrantyExpiry\":\"\",\"bookable\":\"No\",\"remarks\":\"\",\"allocatedToUserId\":\"\",\"allocatedDate\":\"\",\"expectedReturnDate\":\"\",\"assetTag\":\"AF-0011\",\"qrCode\":\"assetflow://asset/AF-0011?sn=\",\"barcode\":\"AF*0011*0\",\"photo\":\"\",\"documents\":[],\"history\":[{\"id\":\"HIST-1783841575478\",\"eventType\":\"Created\",\"date\":\"2026-07-12T07:32:55.478Z\",\"user\":\"System Administrator\",\"userId\":\"USR0001\",\"notes\":\"Initial registration in AssetFlow system.\"}],\"createdAt\":\"2026-07-12T07:32:55.479Z\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T07:32:55.484Z"
+  },
+  {
+    "id": "LOG-1783841717879-948",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Promote",
+    "entity": "User",
+    "entityId": "USR0005",
+    "previousValue": "Department Head",
+    "newValue": "Employee",
+    "ip": "::1",
+    "timestamp": "2026-07-12T07:35:17.879Z"
+  },
+  {
+    "id": "LOG-1783841729410-112",
+    "userId": "USR0004",
+    "userName": "Marcus Wright",
+    "action": "Login",
+    "entity": "User",
+    "entityId": "USR0004",
+    "previousValue": null,
+    "newValue": "{\"action\":\"logged_in\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T07:35:29.409Z"
+  },
+  {
+    "id": "LOG-1783841751618-336",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Login",
+    "entity": "User",
+    "entityId": "USR0001",
+    "previousValue": null,
+    "newValue": "{\"action\":\"logged_in\"}",
+    "ip": "::1",
+    "timestamp": "2026-07-12T07:35:51.617Z"
+  },
+  {
+    "id": "LOG-1783841771859-459",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Promote",
+    "entity": "User",
+    "entityId": "USR0005",
+    "previousValue": "Employee",
+    "newValue": "Asset Manager",
+    "ip": "::1",
+    "timestamp": "2026-07-12T07:36:11.858Z"
+  },
+  {
+    "id": "LOG-1783841783312-853",
+    "userId": "USR0001",
+    "userName": "System Administrator",
+    "action": "Promote",
+    "entity": "User",
+    "entityId": "USR0005",
+    "previousValue": "Asset Manager",
+    "newValue": "Employee",
+    "ip": "::1",
+    "timestamp": "2026-07-12T07:36:23.312Z"
   }
 ]

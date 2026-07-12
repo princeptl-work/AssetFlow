@@ -1,1 +1,110 @@
-[]
+[
+  {
+    "id": "AUD-0001",
+    "name": "Q2 IT Asset Audit",
+    "departmentId": "DEP-1783830531268-685",
+    "location": "HQ - Floor 3",
+    "startDate": "2026-06-01",
+    "endDate": "2026-06-15",
+    "auditors": [
+      "USR0002"
+    ],
+    "description": "Annual physical verification and scan of all electronics, laptops and workstation setups on Floor 3.",
+    "status": "Completed",
+    "details": {
+      "AF-0001": {
+        "notes": "Workstation is clean and operational.",
+        "status": "Verified",
+        "condition": "Excellent",
+        "timestamp": "2026-06-05T10:00:00.000Z",
+        "verifiedBy": "Sarah Connor",
+        "verifiedById": "USR0002"
+      },
+      "AF-0002": {
+        "notes": "Stored in IT lab cabinets.",
+        "status": "Verified",
+        "condition": "Good",
+        "timestamp": "2026-06-05T10:15:00.000Z",
+        "verifiedBy": "Sarah Connor",
+        "verifiedById": "USR0002"
+      },
+      "AF-0007": {
+        "notes": "Heavy toner leakage inside tray.",
+        "status": "Damaged",
+        "condition": "Fair",
+        "timestamp": "2026-06-05T10:30:00.000Z",
+        "verifiedBy": "Sarah Connor",
+        "verifiedById": "USR0002"
+      },
+      "AF-0008": {
+        "notes": "Desk could not be located on floor 3, possibly moved to operations.",
+        "status": "Missing",
+        "condition": "Good",
+        "timestamp": "2026-06-06T11:00:00.000Z",
+        "verifiedBy": "Sarah Connor",
+        "verifiedById": "USR0002"
+      }
+    },
+    "discrepancyReport": [
+      {
+        "name": "Standing Desk Pro",
+        "notes": "Desk could not be located on floor 3, possibly moved to operations.",
+        "assetId": "AF-0008",
+        "assetTag": "AF-0008",
+        "auditedStatus": "Missing",
+        "expectedStatus": "Available",
+        "auditedCondition": "Excellent",
+        "expectedCondition": "Excellent"
+      },
+      {
+        "name": "HP LaserJet Enterprise",
+        "notes": "Heavy toner leakage inside tray.",
+        "assetId": "AF-0007",
+        "assetTag": "AF-0007",
+        "auditedStatus": "Damaged",
+        "expectedStatus": "Under Maintenance",
+        "auditedCondition": "Fair",
+        "expectedCondition": "Fair"
+      }
+    ],
+    "closedAt": "2026-06-15T17:00:00.000Z",
+    "createdAt": "2026-06-01T08:00:00.000Z",
+    "updatedAt": "2026-06-15T17:00:00.000Z"
+  },
+  {
+    "id": "AUD-0002",
+    "name": "Operations Fleet and Facility Audit",
+    "departmentId": "DEP-1783830531270-260",
+    "location": "Parking Lot A & Floor 2",
+    "startDate": "2026-07-10",
+    "endDate": "2026-07-25",
+    "auditors": [
+      "USR0002",
+      "USR0003"
+    ],
+    "description": "Mid-year check of operations equipment, conference room electronics, and fleet vehicles.",
+    "status": "In Progress",
+    "details": {
+      "AF-0003": {
+        "notes": "In use by employee.",
+        "status": "Verified",
+        "condition": "Good",
+        "timestamp": "2026-07-12T10:00:00.000Z",
+        "verifiedBy": "Sarah Connor",
+        "verifiedById": "USR0002"
+      },
+      "AF-0004": {
+        "notes": "Vehicle is clean, battery charged.",
+        "status": "Verified",
+        "condition": "Excellent",
+        "timestamp": "2026-07-11T14:00:00.000Z",
+        "verifiedBy": "John Doe",
+        "verifiedById": "USR0003"
+      }
+    },
+    "discrepancyReport": [],
+    "closedAt": "",
+    "createdAt": "2026-07-10T09:00:00.000Z",
+    "updatedAt": ""
+  }
+]

@@ -1,1 +1,121 @@
-[]
+[
+  {
+    "id": "MNT-0001",
+    "assetId": "AF-0001",
+    "raisedByUserId": "USR0004",
+    "issue": "Battery swelling and rapid discharge",
+    "priority": "High",
+    "description": "The trackpad is lifting up slightly, indicating that the battery might be swelling. Also, it only holds a charge for about 45 minutes instead of the normal 8-10 hours. Needs replacement as soon as possible.",
+    "status": "In Progress",
+    "technicianId": "USR0002",
+    "images": [],
+    "documents": [],
+    "timeline": [
+      {
+        "notes": "Ticket created by Marcus Wright",
+        "status": "Pending",
+        "timestamp": "2026-07-10T10:00:00.000Z"
+      },
+      {
+        "notes": "Approved for diagnostic check by System Administrator",
+        "status": "Approved",
+        "timestamp": "2026-07-10T11:30:00.000Z"
+      },
+      {
+        "notes": "Assigned to Sarah Connor",
+        "status": "Technician Assigned",
+        "timestamp": "2026-07-10T12:00:00.000Z"
+      },
+      {
+        "notes": "Diagnostic confirmed battery swelling. Replacement part ordered from vendor.",
+        "status": "In Progress",
+        "timestamp": "2026-07-11T09:00:00.000Z"
+      }
+    ],
+    "createdAt": "2026-07-10T10:00:00.000Z",
+    "updatedAt": "2026-07-11T09:00:00.000Z"
+  },
+  {
+    "id": "MNT-0002",
+    "assetId": "AF-0007",
+    "raisedByUserId": "USR0003",
+    "issue": "Paper jam in fuser area",
+    "priority": "Medium",
+    "description": "Error code 50.12 fuser error displayed. Every print job gets jammed in Tray 2 feed roller or fuser exit area. Needs deep cleaning and fuser roller inspection.",
+    "status": "Approved",
+    "technicianId": "",
+    "images": [],
+    "documents": [],
+    "timeline": [
+      {
+        "notes": "Ticket created by John Doe",
+        "status": "Pending",
+        "timestamp": "2026-07-12T08:15:00.000Z"
+      },
+      {
+        "notes": "Approved by System Administrator. Releasing to technician queue.",
+        "status": "Approved",
+        "timestamp": "2026-07-12T09:00:00.000Z"
+      }
+    ],
+    "createdAt": "2026-07-12T08:15:00.000Z",
+    "updatedAt": "2026-07-12T09:00:00.000Z"
+  },
+  {
+    "id": "MNT-0003",
+    "assetId": "AF-0005",
+    "raisedByUserId": "USR0004",
+    "issue": "Lamp replacement warning light on",
+    "priority": "Low",
+    "description": "The red warning light for the projector bulb is blinking. On-screen message says lamp life is at 5%. Please schedule lamp replacement.",
+    "status": "Resolved",
+    "technicianId": "USR0001",
+    "images": [],
+    "documents": [],
+    "timeline": [
+      {
+        "notes": "Ticket created by Marcus Wright",
+        "status": "Pending",
+        "timestamp": "2026-07-05T14:00:00.000Z"
+      },
+      {
+        "notes": "Approved by Sarah Connor",
+        "status": "Approved",
+        "timestamp": "2026-07-06T10:00:00.000Z"
+      },
+      {
+        "notes": "Fitted new OEM Epson bulb and reset lamp timer counter.",
+        "status": "In Progress",
+        "timestamp": "2026-07-06T11:00:00.000Z"
+      },
+      {
+        "notes": "Verified projection quality and brightness. Resolved successfully.",
+        "status": "Resolved",
+        "timestamp": "2026-07-06T11:30:00.000Z"
+      }
+    ],
+    "createdAt": "2026-07-05T14:00:00.000Z",
+    "updatedAt": "2026-07-06T11:30:00.000Z"
+  },
+  {
+    "id": "MNT-0004",
+    "assetId": "AF-0004",
+    "raisedByUserId": "USR0003",
+    "issue": "Squeaking sound from front brakes",
+    "priority": "Critical",
+    "description": "High-pitched squealing noise heard during low speed braking. Rear view camera occasionally shows black screen as well. Needs Tesla service center inspection.",
+    "status": "Pending",
+    "technicianId": "",
+    "images": [],
+    "documents": [],
+    "timeline": [
+      {
+        "notes": "Ticket created by John Doe",
+        "status": "Pending",
+        "timestamp": "2026-07-12T11:45:00.000Z"
+      }
+    ],
+    "createdAt": "2026-07-12T11:45:00.000Z",
+    "updatedAt": "2026-07-12T11:45:00.000Z"
+  }
+]

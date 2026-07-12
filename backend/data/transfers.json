@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "id": "TRF-0001",
+    "assetId": "AF-0001",
+    "requestedByUserId": "USR0004",
+    "targetUserId": "USR0002",
+    "targetDepartmentId": "DEP-1783830531268-685",
+    "status": "Requested",
+    "deptHeadApproverId": "",
+    "assetManagerApproverId": "",
+    "notes": "Requesting transfer of this developer Macbook to Sarah Connor in the IT Department as I am transitioning to the Operations team.",
+    "requestDate": "2026-07-11T14:30:00.000Z",
+    "deptHeadApprovalDate": "",
+    "assetManagerApprovalDate": "",
+    "createdAt": "2026-07-11T14:30:00.000Z",
+    "updatedAt": ""
+  },
+  {
+    "id": "TRF-0002",
+    "assetId": "AF-0003",
+    "requestedByUserId": "USR0004",
+    "targetUserId": "",
+    "targetDepartmentId": "DEP-1783830531268-685",
+    "status": "Dept Head Approved",
+    "deptHeadApproverId": "USR0003",
+    "assetManagerApproverId": "",
+    "notes": "Transferring ergonomic chair from Operations office space to IT office space.",
+    "requestDate": "2026-07-10T09:00:00.000Z",
+    "deptHeadApprovalDate": "2026-07-10T11:00:00.000Z",
+    "assetManagerApprovalDate": "",
+    "createdAt": "2026-07-10T09:00:00.000Z",
+    "updatedAt": "2026-07-10T11:00:00.000Z"
+  },
+  {
+    "id": "TRF-0003",
+    "assetId": "AF-0008",
+    "requestedByUserId": "USR0001",
+    "targetUserId": "USR0004",
+    "targetDepartmentId": "DEP-1783830531270-260",
+    "status": "Reallocated",
+    "deptHeadApproverId": "USR0001",
+    "assetManagerApproverId": "USR0001",
+    "notes": "Allocating standard office standing desk directly to Marcus Wright's workstation.",
+    "requestDate": "2026-07-08T10:00:00.000Z",
+    "deptHeadApprovalDate": "2026-07-08T10:05:00.000Z",
+    "assetManagerApprovalDate": "2026-07-08T10:10:00.000Z",
+    "createdAt": "2026-07-08T10:00:00.000Z",
+    "updatedAt": "2026-07-08T10:10:00.000Z"
+  }
+]
